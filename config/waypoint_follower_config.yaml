@@ -1,0 +1,6 @@
+waypoints_filepath : /wpf_ws/src/wpf_tools/config/waypoints_line.yaml
+gps_error_simulator_config_filepath: /wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml
+nav_planner_config_filepath: /wpf_ws/src/wpf_tools/config/planner_straight_line.yaml
+nav_controller_config_filepath: /wpf_ws/src/wpf_tools/config/controller_rpp.yaml
+goal_checker_xy_tolerance: 0.1
+goal_checker_yaw_tolerance: 3.14

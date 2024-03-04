@@ -1,0 +1,13 @@
+waypoint_generator_node:
+  ros__parameters:
+    # which pattern to use to generate waypoints
+    # possible options: 'line', 'cosine', 'square wave' 
+    pattern: 'line'
+    # euclidic distance between waypoints, not x separation
+    waypoint_separation_in_m: 0.7
+    # length of the path through all waypoints.
+    intended_length_in_m: 20.0
+    # whether to ignore path length and use length of wave in propagation direction instead
+    use_length_in_propagation_direction: True
+    cosine_wavelength_in_m: 20.0
+    cosine_amplitude_in_m: 3.75
