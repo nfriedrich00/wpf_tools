@@ -10,7 +10,7 @@ from geometry_msgs.msg import Point, Pose, Quaternion, PoseStamped
 from std_msgs.msg import Header
 from rclpy.node import Node
 
-from wpf_utils import *
+from .wpf_utils import *
 
 
 class AnalyzerNode(Node):
