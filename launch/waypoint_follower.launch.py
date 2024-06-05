@@ -30,6 +30,16 @@ def generate_launch_description():
     gps_error_simulator_config_filepath = os.path.expanduser("~") + config_data.get("gps_error_simulator_config_filepath")
     planner_config_filepath = os.path.expanduser("~") + config_data.get("nav_planner_config_filepath")
     controller_config_filepath = os.path.expanduser("~") + config_data.get("nav_controller_config_filepath")
+
+
+    start_monitoring = GroupAction(
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(PathJoinSubstitution(
+                    [FindPackageShare('wpf_tools'), 'launch', 'monitor.launch.py']))
+            )
+        ]
+    )
     
     start_rviz = GroupAction(
         actions=[
@@ -187,6 +197,7 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
+    ld.add_action(start_monitoring)
     ld.add_action(start_rviz)
     ld.add_action(start_gazebo)
     ld.add_action(start_ground_truth_publisher)
