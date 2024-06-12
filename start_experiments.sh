@@ -10,7 +10,7 @@ SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 current_path=$(pwd)
 
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected in start_experiments.sh! Exiting..."; cd "$current_path"; exit 1' SIGINT
+trap 'echo "SIGINT detected in start_experiments.sh! Exiting..."; cd "$current_path"; sleep 10; exit 1' SIGINT
 
 # switch to the script path
 cd $SCRIPTPATH

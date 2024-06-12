@@ -33,7 +33,7 @@ while getopts "c:t:s:" opt; do
 done
 
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill-session -t "$SESSION"; exit 1' SIGINT
+trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill-session -t "$SESSION"; sleep 10; exit 1' SIGINT
 
 
 # print all arguments for debugging
