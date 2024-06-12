@@ -4,6 +4,7 @@ SESSION="Experiment"
 max_runtime=300
 config_filepath=~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoint_follower_config.yaml
 sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
+init_sources=0
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
@@ -16,6 +17,12 @@ while getopts "c:t:s:" opt; do
             max_runtime=$OPTARG
             ;;
         s )
+            # if this is the first source, clear the sources array
+            if [ $init_sources -eq 0 ]; then
+                sources=()
+                init_sources=1
+            fi
+            
             # append to the sources array
             sources+=("$OPTARG")
             ;;
