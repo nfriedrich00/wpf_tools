@@ -16,7 +16,8 @@ while getopts "c:t:s:" opt; do
             max_runtime=$OPTARG
             ;;
         s )
-            sources=$OPTARG
+            # append to the sources array
+            sources+=("$OPTARG")
             ;;
         \? )
             echo "Usage: cmd [-c config_filepath] [-t max_runtime] [-s sources]"
