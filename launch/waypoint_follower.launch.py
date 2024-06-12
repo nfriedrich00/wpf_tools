@@ -39,17 +39,13 @@ def generate_launch_description():
     planner_config_filepath = os.path.expanduser("~") + config_data.get("nav_planner_config_filepath")
     controller_config_filepath = os.path.expanduser("~") + config_data.get("nav_controller_config_filepath")
     
-    start_rviz = GroupAction(
-        actions=[
-            IncludeLaunchDescription(
+    start_rviz = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(PathJoinSubstitution(
                     [FindPackageShare("claudi_viz"), 'launch', 'view_robot.launch.py'])),
                 launch_arguments = {'use_sim_time' : 'True'}.items(),
                 condition=IfCondition(NotSubstitution(run_headless))
                 # try out SetUseSimTime instead
-            ),
-        ]
-    )
+            )
 
     start_gazebo = GroupAction(
         actions=[
