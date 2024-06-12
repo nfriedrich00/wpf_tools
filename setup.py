@@ -37,7 +37,7 @@ setup(
                 'goal_checker = wpf_tools.goal_checker_node:main',
                 'log_position = wpf_tools.log_position_node:main',
                 'analyze_data = wpf_tools.analyzer_node:main',
-                'start_topic_monitor = wpf_tools.analyzer_node_main',
+                'start_topic_monitor = wpf_tools.monitor_node:main',
         ],
     },
 )
