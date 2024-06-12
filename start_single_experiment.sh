@@ -6,7 +6,7 @@ config_filepath=~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config
 sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
 
 # parse arguments to the script
-# optionally accept a new path for the config_filepath, max_runtime, and sources
+# optionally accept a new path for the config_filepath, max_runtime, session_name and sources
 while getopts "c:t:s:" opt; do
     case ${opt} in
         c )
@@ -25,7 +25,7 @@ while getopts "c:t:s:" opt; do
 done
 
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected! Exiting...";tmux kill-session -t "$SESSION"; exit 1' SIGINT
+trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill-session -t "$SESSION"; exit 1' SIGINT
 
 
 # print all arguments for debugging
@@ -116,17 +116,12 @@ elapsed_time=$(($(date +%s) - start_time))
 while [ $elapsed_time -lt $max_runtime ]; do
     if ! [ -z "$(ros2 topic list | grep 'status/goal_checker/OK')" ]; then
         echo "Goal reached after $elapsed_time seconds"
-        #####
-        #
-        # Change config file/parameters?
-        #
-        #####
-        echo "Restarting..."
+        echo "Ending..."
         tmux send-keys -t 'window 0' C-c
         sleep 10
         tmux kill-session -t "$session_name"
         sleep 5 # some nodes keep running for some time
-        break
+        exit 0
     fi
     elapsed_time=$(($(date +%s) - start_time))
 done
@@ -137,3 +132,4 @@ tmux send-keys -t 'window 0' C-c
 sleep 10
 tmux kill-session -t "$session_name"
 sleep 5 # some nodes keep running for some time
+exit 1
