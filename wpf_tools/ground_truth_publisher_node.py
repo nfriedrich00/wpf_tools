@@ -41,17 +41,18 @@ class GroundTruthPublisher(Node):
 
 
     def listener_callback(self, msg):
-        pose_stamped = PoseStamped()
-        pose_stamped.header.stamp = self.get_clock().now().to_msg()
-        pose_stamped.header.frame_id = 'map'
-        
-        pose_stamped.pose.position.x = msg.transforms[0].transform.translation.x
-        pose_stamped.pose.position.y = msg.transforms[0].transform.translation.y
-        pose_stamped.pose.position.z = msg.transforms[0].transform.translation.z
+        if(len(msg.transforms) > 0):
+            pose_stamped = PoseStamped()
+            pose_stamped.header.stamp = self.get_clock().now().to_msg()
+            pose_stamped.header.frame_id = 'map'
+            
+            pose_stamped.pose.position.x = msg.transforms[0].transform.translation.x
+            pose_stamped.pose.position.y = msg.transforms[0].transform.translation.y
+            pose_stamped.pose.position.z = msg.transforms[0].transform.translation.z
 
-        pose_stamped.pose.orientation = msg.transforms[0].transform.rotation
+            pose_stamped.pose.orientation = msg.transforms[0].transform.rotation
 
-        self.publisher_.publish(pose_stamped)
+            self.publisher_.publish(pose_stamped)
 
 def main(args=None):
     rclpy.init(args=args)
