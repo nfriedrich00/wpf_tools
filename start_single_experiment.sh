@@ -80,6 +80,15 @@ while [ $started -eq 0 ]; do
 
     echo "Unique session name found: $session_name"
 
+    # check size of output.log and delete if it is too big
+    if [ -f output.log ]; then
+        size=$(du -k output.log | cut -f1)
+        if [ $size -gt 100000 ]; then
+            echo "output.log is too big. Deleting..."
+            rm output.log
+        fi
+    fi
+
     # start the experiment
     tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >>output.log'
     tmux rename-window -t 0 'window 0'
