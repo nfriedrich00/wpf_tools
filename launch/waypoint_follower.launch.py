@@ -10,6 +10,11 @@ from launch.substitutions import FindExecutable, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.event_handlers import OnProcessExit
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch.conditions import UnlessCondition, IfCondition
+from launch.substitutions import NotSubstitution
+
 
 
 def generate_launch_description():
@@ -22,6 +27,9 @@ def generate_launch_description():
     #waypoints_filepath = LaunchConfiguration('waypoints_filepath')
     #decl_waypoints_filepath = DeclareLaunchArgument('waypoints_filepath', default_value=os.path.join(this_pkg_share, 'config/waypoints.yaml'), description='Path to the waypoints yaml file.')
 
+
+    run_headless = LaunchConfiguration('run_headless')
+    decl_run_headless = DeclareLaunchArgument('run_headless', default_value='False')
 
     with open(config_filepath, 'r') as config_file:
         config_data = yaml.safe_load(config_file)
@@ -41,22 +49,20 @@ def generate_launch_description():
         ]
     )
     
-    start_rviz = GroupAction(
-        actions=[
-            IncludeLaunchDescription(
+    start_rviz = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(PathJoinSubstitution(
                     [FindPackageShare("claudi_viz"), 'launch', 'view_robot.launch.py'])),
-                launch_arguments = {'use_sim_time' : 'True'}.items()
+                launch_arguments = {'use_sim_time' : 'True'}.items(),
+                condition=IfCondition(NotSubstitution(run_headless))
                 # try out SetUseSimTime instead
-            ),
-        ]
-    )
+            )
 
     start_gazebo = GroupAction(
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(PathJoinSubstitution(
-                    [FindPackageShare("claudi_gazebo"), 'launch', 'gazebo_sim.launch.py']))
+                    [FindPackageShare("claudi_gazebo"), 'launch', 'gazebo_sim.launch.py'])),
+                launch_arguments = {'run_headless' : run_headless}.items(),
             ),
         ]
     )
@@ -198,6 +204,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(start_monitoring)
+    ld.add_action(decl_run_headless)
     ld.add_action(start_rviz)
     ld.add_action(start_gazebo)
     ld.add_action(start_ground_truth_publisher)
