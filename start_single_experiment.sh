@@ -142,6 +142,7 @@ while [ $started -eq 0 ]; do
         sleep 10
         tmux kill-session -t "$session_name"
         sleep 5 # some nodes keep running for some time
+        remove_results
         continue
     fi
     if [ -z "$(ros2 topic list | grep 'status/localization/OK')" ]; then
@@ -150,6 +151,7 @@ while [ $started -eq 0 ]; do
         sleep 10
         tmux kill-session -t "$session_name"
         sleep 5 # some nodes keep running for some time
+        remove_results
         continue
     fi
     if [ -z "$(ros2 topic list | grep 'status/navigation/OK')" ]; then
@@ -158,6 +160,7 @@ while [ $started -eq 0 ]; do
         sleep 10
         tmux kill-session -t "$session_name"
         sleep 5 # some nodes keep running for some time
+        remove_results
         continue
     fi
 
