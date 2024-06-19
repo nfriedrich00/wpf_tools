@@ -47,7 +47,7 @@ trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill
 # define function to run evaluation
 function analyze_data {
     echo "Analyzing data..."
-    ros2 run wpf_tools analyze_data.py --ros-args -p logs_path:=$results_dir -p results_path:=$output_file
+    ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file
 }
 
 # function to check whether all .yaml-files in results_dir are written
