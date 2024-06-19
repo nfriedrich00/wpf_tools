@@ -27,9 +27,16 @@ class AnalyzerNode(Node):
 
         # the following directory contains exactly one file for each session
         self.logs_path = os.path.expanduser("~") + "/Documents/wpf/logs"
-        self.declare_parameter('logs_path', None)
+        self.results_path = os.path.expanduser("~") + "/Documents/wpf/results.yaml"
+
+        self.declare_parameter('logs_path', self.logs_path)
         if self.get_parameter('logs_path').value is not None:
             self.logs_path = self.get_parameter('logs_path').value
+        
+        self.declare_parameter('results_path', self.results_path)
+        if self.get_parameter('results_path').value is not None:
+            self.results_path = self.get_parameter('results_path').value
+
         goal_checker_dir = self.logs_path + "/goal_checker"
         list_of_goal_checker_log_files = glob.glob(goal_checker_dir + '/*')
         path_of_newest_file = max(
@@ -188,7 +195,7 @@ class AnalyzerNode(Node):
         ''' Save the results to a yaml file in the logs path root.
         '''
         self.get_logger().info('Saving data ...')
-        logfile = self.logs_path + '/results.yaml'
+        logfile = self.results_path
         with open(logfile, 'w', encoding = 'utf-8') as file:
             yaml.dump(results, file, default_flow_style=False)
 

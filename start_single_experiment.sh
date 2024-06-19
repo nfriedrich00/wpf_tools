@@ -2,13 +2,15 @@
 
 SESSION="Experiment"
 max_runtime=300
-config_filepath=~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoint_follower_config.yaml
+config_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoint_follower_config.yaml"
+results_dir="~/Documents/wpf/logs"
+output_file="~/Documents/wpf/results.yaml"
 sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
 init_sources=0
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "c:t:s:" opt; do
+while getopts "c:t:s:r:" opt; do
     case ${opt} in
         c )
             config_filepath=$OPTARG
@@ -26,6 +28,13 @@ while getopts "c:t:s:" opt; do
             # append to the sources array
             sources+=("$OPTARG")
             ;;
+        r )
+            results_dir=$OPTARG
+            ;;
+
+        o) 
+            output_file=$OPTARG
+            ;;
         \? )
             echo "Usage: cmd [-c config_filepath] [-t max_runtime] [-s sources]"
             ;;
@@ -35,6 +44,33 @@ done
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
 trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill-session -t "$SESSION"; sleep 10; exit 1' SIGINT
 
+# define function to run evaluation
+function analyze_data {
+    echo "Analyzing data..."
+    ros2 run wpf_tools analyze_data.py --ros-args -p logs_path:=$results_dir -p results_path:=$output_file
+}
+
+# function to check whether all .yaml-files in results_dir are written
+function check_results {
+    echo "Waiting for results..."
+
+    # loop recusively through all files in results_dir and recurse if a directory is found
+    for file in $(find $results_dir -type f -name "*.yaml"); do
+        # check if any process is writing to the file
+        while lsof $file; do
+            echo "File $file is still being written to..."
+            sleep 1
+        done
+    done
+
+    return 0
+}
+
+# function to remove results_dir and all its contents
+function remove_results {
+    echo "Removing results..."
+    rm -rf $results_dir
+}
 
 # print all arguments for debugging
 echo "config_filepath: $config_filepath"
@@ -136,17 +172,26 @@ while [ $elapsed_time -lt $max_runtime ]; do
         echo "Ending..."
         tmux send-keys -t 'window 0' C-c
         sleep 10
+        # wait for results to be written
+        check_results
+
+        # kill session
         tmux kill-session -t "$session_name"
         sleep 5 # some nodes keep running for some time
+        
+        # analyze data
+        analyze_data
+        remove_results
         exit 0
     fi
     elapsed_time=$(($(date +%s) - start_time))
 done
 
 # timeout
-echo "Timeout, restarting..."
+echo "Timeout, killing..."
 tmux send-keys -t 'window 0' C-c
 sleep 10
 tmux kill-session -t "$session_name"
 sleep 5 # some nodes keep running for some time
+remove_results
 exit 1
