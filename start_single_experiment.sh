@@ -10,7 +10,7 @@ init_sources=0
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "c:t:s:r:" opt; do
+while getopts "c:t:s:r:o:" opt; do
     case ${opt} in
         c )
             config_filepath=$OPTARG
