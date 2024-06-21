@@ -96,9 +96,9 @@ function check_file {
     fi
 }
 
-# function for resolving ~ in file paths
+# function for replace ~ in string with $HOME
 function resolve_path {
-    echo $(realpath "$1")
+    echo $(eval echo $1)
 }
 
 # resolve all file paths
