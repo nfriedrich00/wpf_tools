@@ -96,6 +96,19 @@ function check_file {
     fi
 }
 
+# function for resolving ~ in file paths
+function resolve_path {
+    echo $(realpath "$1")
+}
+
+# resolve all file paths
+waypoints_filepath=$(resolve_path $waypoints_filepath)
+gnss_error_filepath=$(resolve_path $gnss_error_filepath)
+nav_planner_filepath=$(resolve_path $nav_planner_filepath)
+nav_controller_filepath=$(resolve_path $nav_controller_filepath)
+results_dir=$(resolve_path $results_dir)
+output_file=$(resolve_path $output_file)
+
 # print all arguments for debugging
 echo "waypoints_filepath: $waypoints_filepath"
 echo "gnss_error_filepath: $gnss_error_filepath"
