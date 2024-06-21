@@ -11,10 +11,11 @@ output_file="~/Documents/wpf/results.yaml"
 sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
 init_sources=0
 run_headless=1
+quiet=0
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "w:g:p:c:t:s:r:o:v:" opt; do
+while getopts "w:g:p:c:t:s:r:o:v:q:" opt; do
     case ${opt} in
         w )
             waypoints_filepath=$OPTARG
@@ -61,6 +62,19 @@ while getopts "w:g:p:c:t:s:r:o:v:" opt; do
                 exit 1
             fi
             ;;
+        q)
+            # accept 0,1,true,false,True,False,TRUE,FALSE and convert to 0,1
+            if [ $OPTARG == "0" ] || [ $OPTARG == "1" ] || [ $OPTARG == "true" ] || [ $OPTARG == "false" ] || [ $OPTARG == "True" ] || [ $OPTARG == "False" ] || [ $OPTARG == "TRUE" ] || [ $OPTARG == "FALSE" ]; then
+                if [ $OPTARG == "0" ] || [ $OPTARG == "false" ] || [ $OPTARG == "False" ] || [ $OPTARG == "FALSE" ]; then
+                    quiet=0
+                else
+                    quiet=1
+                fi
+            else
+                echo "Invalid value for run_headless: $OPTARG"
+                exit 1
+            fi
+            ;;
         \?)
             echo "Usage: cmd [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-s source] [-r results_dir] [-o output_file]"
             exit 1
@@ -73,19 +87,25 @@ trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill
 
 # define function to run evaluation
 function analyze_data {
-    echo "Analyzing data..."
+    if [ $quiet -eq 0 ]; then
+        echo "Analyzing data..."
+    fi
     ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file
 }
 
 # function to check whether all .yaml-files in results_dir are written
 function check_results {
-    echo "Waiting for results..."
+    if [ $quiet -eq 0 ]; then
+        echo "Waiting for results..."
+    fi
 
     # loop recusively through all files in results_dir and recurse if a directory is found
     for file in $(find $results_dir -type f -name "*.yaml"); do
         # check if any process is writing to the file
         while lsof $file; do
-            echo "File $file is still being written to..."
+            if [ $quiet -eq 0 ]; then
+                echo "File $file is still being written to..."
+            fi
             sleep 1
         done
     done
@@ -95,14 +115,18 @@ function check_results {
 
 # function to remove results_dir and all its contents
 function remove_results {
-    echo "Removing results..."
+    if [ $quiet -eq 0 ]; then
+        echo "Removing results..."
+    fi
     rm -rf $results_dir
 }
 
 # function for checking if file exists
 function check_file {
     if [ -f "$1" ]; then
-        echo "File $1 found"
+        if [ $quiet -eq 0 ]; then
+            echo "File $1 found"
+        fi
         return 0
     else
         echo "File $1 not found"
@@ -124,17 +148,21 @@ results_dir=$(resolve_path $results_dir)
 output_file=$(resolve_path $output_file)
 
 # print all arguments for debugging
-echo "waypoints_filepath: $waypoints_filepath"
-echo "gnss_error_filepath: $gnss_error_filepath"
-echo "nav_planner_filepath: $nav_planner_filepath"
-echo "nav_controller_filepath: $nav_controller_filepath"
-echo "results_dir: $results_dir"
-echo "output_file: $output_file"
-echo "max_runtime: $max_runtime"
-for src in "${sources[@]}"
-do
-  echo "source: $src"
-done
+if [ $quiet -eq 0 ]; then
+    echo "waypoints_filepath: $waypoints_filepath"
+    echo "gnss_error_filepath: $gnss_error_filepath"
+    echo "nav_planner_filepath: $nav_planner_filepath"
+    echo "nav_controller_filepath: $nav_controller_filepath"
+    echo "results_dir: $results_dir"
+    echo "output_file: $output_file"
+    echo "max_runtime: $max_runtime"
+    echo "run_headless: $run_headless"
+    echo "quiet: $quiet"
+    for src in "${sources[@]}"
+    do
+    echo "source: $src"
+    done
+fi
 
 
 # check whether all config files exist
@@ -163,7 +191,9 @@ fi
 for src in "${sources[@]}"
 do
     p=$(realpath "$src")
-    echo "Sourcing $p"
+    if [ $quiet -eq 0 ]; then
+        echo "Sourcing $p"
+    fi
     if [ -f "$p" ]; then
         source $p
     else
@@ -190,7 +220,9 @@ while [ $started -eq 0 ]; do
     if [ -f output.log ]; then
         size=$(du -k output.log | cut -f1)
         if [ $size -gt 100000 ]; then
-            echo "output.log is too big. Deleting..."
+            if [ $quiet -eq 0 ]; then
+                echo "output.log is too big. Deleting..."
+            fi
             rm output.log
         fi
     fi
@@ -252,8 +284,10 @@ done
 elapsed_time=$(($(date +%s) - start_time))
 while [ $elapsed_time -lt $max_runtime ]; do
     if ! [ -z "$(ros2 topic list | grep 'status/goal_checker/OK')" ]; then
-        echo "Goal reached after $elapsed_time seconds"
-        echo "Ending..."
+        if [ $quiet -eq 0 ]; then
+            echo "Goal reached after $elapsed_time seconds"
+            echo "Ending..."
+        fi
         tmux send-keys -t 'window 0' C-c
         sleep 10
         # wait for results to be written
