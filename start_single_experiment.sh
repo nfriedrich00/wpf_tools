@@ -240,7 +240,10 @@ while [ $started -eq 0 ]; do
     else
         cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=False waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
     fi
-    echo "Executing command: $cmd"
+
+    if [ $quiet -eq 0 ]; then
+        echo "Executing command: $cmd"
+    fi
 
     # execute command in tmux
     tmux send-keys -t 'window 0' "$cmd" C-m
