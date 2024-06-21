@@ -10,10 +10,11 @@ results_dir="~/Documents/wpf/logs"
 output_file="~/Documents/wpf/results.yaml"
 sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
 init_sources=0
+run_headless=1
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "w:g:p:c:t:s:r:o:" opt; do
+while getopts "w:g:p:c:t:s:r:o:v:" opt; do
     case ${opt} in
         w )
             waypoints_filepath=$OPTARG
@@ -47,6 +48,10 @@ while getopts "w:g:p:c:t:s:r:o:" opt; do
         o) 
             output_file=$OPTARG
             ;;
+        v)
+            run_headless=$OPTARG
+            ;;
+
         \? )
             echo "Usage: cmd [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-s source] [-r results_dir] [-o output_file]"
             exit 1
@@ -189,8 +194,12 @@ while [ $started -eq 0 ]; do
     echo "Start experiment" 
 
     # construct command to execute with tmux
-    cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
-    
+    if [ $run_headless -eq 1 ]; then
+        cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
+    else
+        cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=False waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
+    fi
+
     # execute command in tmux
     tmux send-keys -t 'window 0' $cmd C-m
 
