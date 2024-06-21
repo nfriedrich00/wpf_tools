@@ -115,16 +115,12 @@ def generate_launch_description():
     )
 
 
-    start_navigation = GroupAction(
-        actions=[
-            IncludeLaunchDescription(
+    start_navigation = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(PathJoinSubstitution(
                     [FindPackageShare('claudi_navigation'), 'launch', 'navigation.launch.py'])),
                 launch_arguments = {'planner_config_filepath' : nav_planner_config_filepath,
                                     'controller_config_filepath' : nav_controller_config_filepath}.items()
             )
-        ]
-    )
 
     # The navigation starts, as soon as the localization is ready.
     localization_ready_callback = RegisterEventHandler(
