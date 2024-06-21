@@ -3,6 +3,10 @@
 SESSION="Experiment"
 max_runtime=300
 config_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoint_follower_config.yaml"
+waypoints_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoints_line.yaml"
+gnss_error_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/gps_error_simulator_config.yaml"
+nav_planner_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/planner_straight_line.yaml"
+nav_controller_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/controller_rpp.yaml"
 results_dir="~/Documents/wpf/logs"
 output_file="~/Documents/wpf/results.yaml"
 sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
@@ -10,10 +14,19 @@ init_sources=0
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "c:t:s:r:o:" opt; do
+while getopts "w:g:p:c:t:s:r:o:" opt; do
     case ${opt} in
+        w )
+            waypoints_filepath=$OPTARG
+            ;;
+        g )
+            gnss_error_filepath=$OPTARG
+            ;;
+        p )
+            nav_planner_filepath=$OPTARG
+            ;;
         c )
-            config_filepath=$OPTARG
+            nav_controller_filepath=$OPTARG
             ;;
         t )
             max_runtime=$OPTARG
@@ -36,7 +49,8 @@ while getopts "c:t:s:r:o:" opt; do
             output_file=$OPTARG
             ;;
         \? )
-            echo "Usage: cmd [-c config_filepath] [-t max_runtime] [-s sources]"
+            echo "Usage: cmd [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-s source] [-r results_dir] [-o output_file]"
+            exit 1
             ;;
     esac
 done
@@ -131,7 +145,13 @@ while [ $started -eq 0 ]; do
 
     sleep 1
     echo "Start experiment" 
-    tmux send-keys -t 'window 0' 'ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True' C-m
+
+    # construct command to execute with tmux
+    cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
+    
+    # execute command in tmux
+    tmux send-keys -t 'window 0' $cmd C-m
+
     start_time=$(date +%s)
 
     sleep 20
