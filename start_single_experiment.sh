@@ -2,7 +2,6 @@
 
 SESSION="Experiment"
 max_runtime=300
-config_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoint_follower_config.yaml"
 waypoints_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoints_line.yaml"
 gnss_error_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/gps_error_simulator_config.yaml"
 nav_planner_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/planner_straight_line.yaml"
@@ -86,8 +85,24 @@ function remove_results {
     rm -rf $results_dir
 }
 
+# function for checking if file exists
+function check_file {
+    if [ -f "$1" ]; then
+        echo "File $1 found"
+        return 0
+    else
+        echo "File $1 not found"
+        return 1
+    fi
+}
+
 # print all arguments for debugging
-echo "config_filepath: $config_filepath"
+echo "waypoints_filepath: $waypoints_filepath"
+echo "gnss_error_filepath: $gnss_error_filepath"
+echo "nav_planner_filepath: $nav_planner_filepath"
+echo "nav_controller_filepath: $nav_controller_filepath"
+echo "results_dir: $results_dir"
+echo "output_file: $output_file"
 echo "max_runtime: $max_runtime"
 for src in "${sources[@]}"
 do
@@ -95,13 +110,27 @@ do
 done
 
 
-# check if path exists and source them
-if [ -f "$config_filepath" ]; then
-    echo "Config file found at $config_filepath"
-else
-    echo "Config file not found at $config_filepath"
+# check whether all config files exist
+check_file $waypoints_filepath
+if [ $? -ne 0 ]; then
     exit 1
 fi
+
+check_file $gnss_error_filepath
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+check_file $nav_planner_filepath
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+check_file $nav_controller_filepath
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
 
 # source all files in the sources array
 for src in "${sources[@]}"
