@@ -211,7 +211,6 @@ while [ $started -eq 0 ]; do
     echo "Executing command: $cmd"
 
     # execute command in tmux
-    sleep 5
     tmux send-keys -t 'window 0' "$cmd" C-m
 
     start_time=$(date +%s)
