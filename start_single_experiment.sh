@@ -49,8 +49,17 @@ while getopts "w:g:p:c:t:s:r:o:v:" opt; do
             output_file=$OPTARG
             ;;
         v)
-            run_headless=$OPTARG
-            ;;
+            # accept 0,1,true,false,True,False,TRUE,FALSE and convert to 0,1
+            if [ $OPTARG == "0" ] || [ $OPTARG == "1" ] || [ $OPTARG == "true" ] || [ $OPTARG == "false" ] || [ $OPTARG == "True" ] || [ $OPTARG == "False" ] || [ $OPTARG == "TRUE" ] || [ $OPTARG == "FALSE" ]; then
+                if [ $OPTARG == "0" ] || [ $OPTARG == "false" ] || [ $OPTARG == "False" ] || [ $OPTARG == "FALSE" ]; then
+                    run_headless=0
+                else
+                    run_headless=1
+                fi
+            else
+                echo "Invalid value for run_headless: $OPTARG"
+                exit 1
+            fi
 
         \? )
             echo "Usage: cmd [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-s source] [-r results_dir] [-o output_file]"
