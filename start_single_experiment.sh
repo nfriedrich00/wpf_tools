@@ -2,10 +2,10 @@
 
 SESSION="Experiment"
 max_runtime=300
-waypoints_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoints_line.yaml"
-gnss_error_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/gps_error_simulator_config.yaml"
-nav_planner_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/planner_straight_line.yaml"
-nav_controller_filepath="~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/controller_rpp.yaml"
+waypoints_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_line.yaml"
+gnss_error_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
+nav_planner_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
+nav_controller_filepath="~/Documents/ros2/wpf_ws/src/share/wpf_tools/config/controller_rpp.yaml"
 results_dir="~/Documents/wpf/logs"
 output_file="~/Documents/wpf/results.yaml"
 sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
@@ -232,7 +232,9 @@ while [ $started -eq 0 ]; do
     tmux rename-window -t 0 'window 0'
 
     sleep 1
-    echo "Start experiment" 
+    if [ $quiet -eq 0 ]; then
+        echo "Start experiment" 
+    fi
 
     # construct command to execute with tmux
     if [ $run_headless -eq 1 ]; then
