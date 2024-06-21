@@ -60,8 +60,8 @@ while getopts "w:g:p:c:t:s:r:o:v:" opt; do
                 echo "Invalid value for run_headless: $OPTARG"
                 exit 1
             fi
-
-        \? )
+            ;;
+        \?)
             echo "Usage: cmd [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-s source] [-r results_dir] [-o output_file]"
             exit 1
             ;;
@@ -208,9 +208,11 @@ while [ $started -eq 0 ]; do
     else
         cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=False waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
     fi
+    echo "Executing command: $cmd"
 
     # execute command in tmux
-    tmux send-keys -t 'window 0' $cmd C-m
+    sleep 5
+    tmux send-keys -t 'window 0' "$cmd" C-m
 
     start_time=$(date +%s)
 
