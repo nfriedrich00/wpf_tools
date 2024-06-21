@@ -2,7 +2,7 @@
   ros__parameters:
     domain: navigation
     message_type: OccupancyGrid
-    min_f: 0.5
+    min_f: 0.25
     start_type_description_service: true
     topic_name: /global_costmap/costmap
     update_f: 1.0
