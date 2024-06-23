@@ -2,13 +2,13 @@
 
 SESSION="Experiment"
 max_runtime=300
-waypoints_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_line.yaml"
+waypoints_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
 gnss_error_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
 nav_planner_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
 nav_controller_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/controller_rpp.yaml"
 results_dir="~/Documents/wpf/logs"
 output_file="~/Documents/wpf/results.yaml"
-sources=( "/opt/ros/iron/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/ros2/wpf_ws/install/setup.bash" )
+sources=( "/opt/ros/iron/setup.bash" "/home/ubuntu/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/ubuntu/Documents/ros2/wpf_ws/install/setup.bash" )
 init_sources=0
 run_headless=1
 quiet=0
@@ -287,6 +287,7 @@ done
 
 # wait for the experiment to finish
 elapsed_time=$(($(date +%s) - start_time))
+printed_waiting=0
 while [ $elapsed_time -lt $max_runtime ]; do
     if ! [ -z "$(ros2 topic list | grep 'status/goal_checker/OK')" ]; then
         if [ $quiet -eq 0 ]; then
@@ -307,6 +308,14 @@ while [ $elapsed_time -lt $max_runtime ]; do
         remove_results
         exit 0
     fi
+
+    if [ $quiet -eq 0 ]; then
+        if [ $printed_waiting -eq 0 ]; then 
+            echo "Waiting for simulation..."
+            printed_waiting=1
+        fi
+    fi
+    sleep 1
     elapsed_time=$(($(date +%s) - start_time))
 done
 
@@ -316,5 +325,4 @@ tmux send-keys -t 'window 0' C-c
 sleep 10
 tmux kill-session -t "$session_name"
 sleep 5 # some nodes keep running for some time
-remove_results
-exit 1
+exit 0
