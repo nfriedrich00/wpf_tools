@@ -89,8 +89,10 @@ trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill
 function analyze_data {
     if [ $quiet -eq 0 ]; then
         echo "Analyzing data..."
+        ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file
+    else
+        ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file 2>&1 > /dev/null
     fi
-    ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file
 }
 
 # function to check whether all .yaml-files in results_dir are written
@@ -214,7 +216,9 @@ while [ $started -eq 0 ]; do
         session_name="$SESSION-$i"
     done
 
-    echo "Unique session name found: $session_name"
+    if [ $quiet -eq 0 ]; then
+        echo "Unique session name found: $session_name"
+    fi
 
     # check size of output.log and delete if it is too big
     if [ -f output.log ]; then
@@ -285,6 +289,8 @@ while [ $started -eq 0 ]; do
     started=1
 done
 
+echo "Started!"
+
 # wait for the experiment to finish
 elapsed_time=$(($(date +%s) - start_time))
 printed_waiting=0
@@ -325,4 +331,7 @@ tmux send-keys -t 'window 0' C-c
 sleep 10
 tmux kill-session -t "$session_name"
 sleep 5 # some nodes keep running for some time
-exit 0
+
+# analyze data
+remove_results
+exit 1
