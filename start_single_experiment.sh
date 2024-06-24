@@ -2,6 +2,7 @@
 
 SESSION="Experiment"
 max_runtime=300
+max_retries=20
 waypoints_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
 gnss_error_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
 nav_planner_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
@@ -15,7 +16,7 @@ quiet=0
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "w:g:p:c:t:s:r:o:v:q:" opt; do
+while getopts "w:g:p:c:t:s:r:o:v:q:m:" opt; do
     case ${opt} in
         w )
             waypoints_filepath=$OPTARG
@@ -31,6 +32,9 @@ while getopts "w:g:p:c:t:s:r:o:v:q:" opt; do
             ;;
         t )
             max_runtime=$OPTARG
+            ;;
+        m ) 
+            max_retries=$OPTARG
             ;;
         s )
             # if this is the first source, clear the sources array
@@ -141,6 +145,15 @@ function resolve_path {
     echo $(eval echo $1)
 }
 
+# function to kill unsucessfull tmux session
+function kill_session {
+    tmux send-keys -t 'window 0' C-c
+    sleep 10
+    tmux kill-session -t "$1"
+    sleep 5 # some nodes keep running for some time
+    remove_results
+}
+
 # resolve all file paths
 waypoints_filepath=$(resolve_path $waypoints_filepath)
 gnss_error_filepath=$(resolve_path $gnss_error_filepath)
@@ -209,7 +222,10 @@ started=0
 session_name="$SESSION"
 i=0
 retries=0
-while [ $started -eq 0 ]; do
+kill=1
+
+# loop until we successfully start the experiment or we reach the maximum number of retries
+while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
     # find a unique session name
     while tmux has-session -t "$session_name"; do
@@ -261,29 +277,19 @@ while [ $started -eq 0 ]; do
     # after 20 seconds everything should be running fine
     if [ -z "$(ros2 topic list | grep 'status/gazebo/OK')" ]; then
         echo "Gazebo did not start. Restarting..."
-        tmux send-keys -t 'window 0' C-c
-        sleep 10
-        tmux kill-session -t "$session_name"
-        sleep 5 # some nodes keep running for some time
-        remove_results
-        continue
+        kill=1
     fi
     if [ -z "$(ros2 topic list | grep 'status/localization/OK')" ]; then
         echo "Localization is not working correctly. Restarting..."
-        tmux send-keys -t 'window 0' C-c
-        sleep 10
-        tmux kill-session -t "$session_name"
-        sleep 5 # some nodes keep running for some time
-        remove_results
-        continue
+        kill=1
     fi
     if [ -z "$(ros2 topic list | grep 'status/navigation/OK')" ]; then
         echo "Navigation is not working correctly. Restarting..."
-        tmux send-keys -t 'window 0' C-c
-        sleep 10
-        tmux kill-session -t "$session_name"
-        sleep 5 # some nodes keep running for some time
-        remove_results
+        kill=1
+    fi
+
+    if [ $kill -eq 1 ]; then
+        kill_session "$session_name"
         continue
     fi
 
