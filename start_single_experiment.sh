@@ -208,6 +208,7 @@ done
 started=0
 session_name="$SESSION"
 i=0
+retries=0
 while [ $started -eq 0 ]; do
 
     # find a unique session name
@@ -255,7 +256,7 @@ while [ $started -eq 0 ]; do
     tmux send-keys -t 'window 0' "$cmd" C-m
 
     start_time=$(date +%s)
-
+    ((retries++))
     sleep 20
     # after 20 seconds everything should be running fine
     if [ -z "$(ros2 topic list | grep 'status/gazebo/OK')" ]; then
