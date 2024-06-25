@@ -171,6 +171,7 @@ if [ $quiet -eq 0 ]; then
     echo "results_dir: $results_dir"
     echo "output_file: $output_file"
     echo "max_runtime: $max_runtime"
+    echo "max_retries: $max_retries"
     echo "run_headless: $run_headless"
     echo "quiet: $quiet"
     for src in "${sources[@]}"
@@ -222,7 +223,7 @@ started=0
 session_name="$SESSION"
 i=0
 retries=0
-kill=1
+kill=0
 
 # loop until we successfully start the experiment or we reach the maximum number of retries
 while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
@@ -254,7 +255,7 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
     sleep 1
     if [ $quiet -eq 0 ]; then
-        echo "Start experiment" 
+        echo "Start experiment - Retries: $retries, started: $started" 
     fi
 
     # construct command to execute with tmux
@@ -290,13 +291,25 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
     if [ $kill -eq 1 ]; then
         kill_session "$session_name"
+        kill=0
         continue
     fi
 
+    echo "Started!"
     started=1
 done
 
-echo "Started!"
+# exit if we did not manage to start simulation
+if [ $started -eq 0 ]; then
+    tmux send-keys -t 'window 0' C-c
+    sleep 10
+    tmux kill-session -t "$session_name"
+    sleep 5 # some nodes keep running for some time
+
+    # analyze data
+    remove_results
+    exit 1
+fi
 
 # wait for the experiment to finish
 elapsed_time=$(($(date +%s) - start_time))
