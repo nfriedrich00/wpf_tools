@@ -41,14 +41,12 @@ def get_reference_point_np(time_reference: float, points: tuple[np.array]):
     given time.
     '''
     time_start = points[0][-1]
-    time_end = points[0][-1]
+    time_end = points[1][-1]
     time_separation = time_end - time_start
     if round(time_separation, 3) == 0.0:
         return points[0]
-    
     multiplier = (time_reference - time_start) / time_separation
-    return points[0] * multiplier
-
+    return points[0] + multiplier * (points[1] - points[0])
 
 class AnalyzerNode(Node):
     """ Analyzer Node, which analyzes the data logged during any
@@ -161,8 +159,6 @@ class AnalyzerNode(Node):
 
 
         path_key = list(path_data.keys())[0]
-        print(path_key)
-        print(type(path_key))
         path_points = np.array([[wp['x'],
                                  wp['y'],
                                  wp['z'],
