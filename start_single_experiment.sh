@@ -295,7 +295,10 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
         continue
     fi
 
-    echo "Started!"
+    
+    if [ $quiet -eq 0 ]; then
+        echo "Started!"
+    fi
     started=1
 done
 
