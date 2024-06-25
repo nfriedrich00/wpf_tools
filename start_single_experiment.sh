@@ -95,7 +95,7 @@ function analyze_data {
         echo "Analyzing data..."
         ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file
     else
-        ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file 2>&1 > /dev/null
+        ros2 run wpf_tools analyze_data --ros-args -p logs_path:=$results_dir -p results_path:=$output_file &> /dev/null
     fi
 }
 
@@ -229,7 +229,7 @@ kill=0
 while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
     # find a unique session name
-    while tmux has-session -t "$session_name"; do
+    while [[ $(tmux ls 2>&1 | grep -E "^$session_name:") ]]; do
         ((i++))
         session_name="$SESSION-$i"
     done
