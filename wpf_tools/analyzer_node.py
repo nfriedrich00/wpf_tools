@@ -48,6 +48,153 @@ def get_reference_point_np(time_reference: float, points: tuple[np.array]):
     multiplier = (time_reference - time_start) / time_separation
     return points[0] + multiplier * (points[1] - points[0])
 
+def filter_points_loc(points: np.array):
+    ''' Filter corrupted measurements from localization points:
+        1. Sort by timestamp
+        2. Keep first and last
+        3. Inspect points with the same timestamp (always exacly two points)
+            and keep the point closer to the neigbors
+        4. Remove points with logging time before recording time
+    This seems to removes all wrong points and only wrong points.
+    '''
+    timestamps = points[:, 3]
+    sorted_indices = np.argsort(timestamps)
+    sorted_points = points[sorted_indices]
+    
+    def euclidean_distance(a, b):
+        return np.linalg.norm(a[:2] - b[:2])    
+
+    filtered_points = []
+    removed_points = []
+    n = len(sorted_points)
+
+    for i in range(n):
+        if i == 0 or i == n-1:
+            filtered_points.append(sorted_points[i])
+
+        else:
+            prev_point = sorted_points[i-1]
+            curr_point = sorted_points[i]
+            next_point = sorted_points[i+1]
+
+            if curr_point[3] == prev_point[3] or curr_point[3] == next_point[3]:
+            # same timestamp as one of the neighbors -> one of them must be wrong
+                curr_distance = euclidean_distance(curr_point, prev_point)
+                next_distance = euclidean_distance(next_point, prev_point)
+                
+                if curr_distance < next_distance:
+                    filtered_points.append(curr_point)
+
+                else:
+                    removed_points.append(curr_point)
+
+            else:
+                if curr_point[4] < curr_point[3]:
+                # logged before recorded -> something went wrong -> better remove
+                    removed_points.append(curr_point)
+
+                else:
+                    filtered_points.append(curr_point)
+
+    filtered_points = np.array(filtered_points)
+
+    return filtered_points
+
+
+def filter_points_pos(points: np.array):
+    ''' Filter corrupted measurements from ground truth data points:
+        1. Sort by Euclidean distance to previous point (first point is origin).
+        2. Remove if time increment is negative
+            (moving forward in place but backward in time)
+        3. Sort by timestamp
+        4. Remove points that cannot be reached with maximum speed.
+    This seems to removes >99.5% of wrong points and <99.98% of correct points.
+    '''    
+    filtered_points = []
+    removed_points = []
+
+# maybe the robot appears to be moving faster than possible due to
+# inaccurate timestamps. Increase max speed with mulitplier.
+    max_speed = 1.0
+    multiplier = 2.0
+    
+    def euclidean_distance(a, b):
+        return np.linalg.norm(a[:2] - b[:2])
+    
+    def sort_points(points):
+        n = len(points)
+        if n == 0:
+            return points
+        
+        # start point is point closest to origin
+        start_index = np.argmin(np.linalg.norm(points[:, :2], axis=1))
+        sorted_points = [points[start_index]]
+        remaining_points = np.delete(points, start_index, axis=0)
+        
+        while len(remaining_points) > 0:
+            last_point = sorted_points[-1]
+            distances = np.linalg.norm(remaining_points[:, :2] - last_point[:2], axis=1)
+            next_index = np.argmin(distances)
+            sorted_points.append(remaining_points[next_index])
+            remaining_points = np.delete(remaining_points, next_index, axis=0)
+        
+        return np.array(sorted_points)
+
+    sorted_points = sort_points(points)
+    n = len(sorted_points)
+    
+    removed = 1
+    while removed > 0:
+        filtered_points.clear()
+        removed = 0
+        n = len(sorted_points)
+        print(n)
+        for i in range(n-1):
+            curr_point = sorted_points[i]
+            next_point = sorted_points[i+1]
+
+            if curr_point[3] > next_point[3]:
+                # timestamp decreases while moving forwards -> remove point
+                removed_points.append(curr_point)
+                removed += 1
+            else:
+                filtered_points.append(curr_point)
+        sorted_points = np.array(filtered_points)
+
+    # round two: plausibility
+    # sort filtered points by timestamp
+    filtered_points = np.array(filtered_points)
+    timestamps = filtered_points[:, 3]
+    sorted_indices = np.argsort(timestamps)
+    sorted_points = filtered_points[sorted_indices]
+    n = len(sorted_points)
+    filtered_points = []
+
+    for i in range(n-1):
+        curr_point = sorted_points[i]
+        next_point = sorted_points[i+1]
+
+        distance = euclidean_distance(curr_point, next_point)
+        time_sep = next_point[3] - curr_point[3]
+        # this is always positive due to previous step
+        if time_sep == 0.0:
+            speed = 999.9
+        else:
+            speed = distance/time_sep
+
+        if speed > max_speed * multiplier:
+        # implausible movement: current point could not be reached, unless
+        # previous point was wrong
+            removed_points.append(curr_point)
+
+        else:
+            filtered_points.append(curr_point)
+
+    filtered_points = np.array(filtered_points)
+
+    return filtered_points
+
+
 class AnalyzerNode(Node):
     """ Analyzer Node, which analyzes the data logged during any
     claudi simulation. Per default, it analyzes the data of the last
@@ -113,11 +260,16 @@ class AnalyzerNode(Node):
         pos_points = np.array([[pos_data[key]['position']['x'],
                                 pos_data[key]['position']['y'],
                                 pos_data[key]['position']['z'],
-                                pos_data[key]['time']] for key in pos_data])
+                                pos_data[key]['time'],
+                                key] for key in pos_data])
         loc_points = np.array([[loc_data[key]['position']['x'],
                                 loc_data[key]['position']['y'],
                                 loc_data[key]['position']['z'],
-                                loc_data[key]['time']] for key in loc_data])
+                                loc_data[key]['time'],
+                                key] for key in loc_data])
+        
+        loc_points = filter_points_loc(loc_points)
+        pos_points = filter_points_pos(pos_points)
         
         # restrict to points within relevant time interval
         # todo add threshould: find timestamp, when robot pos enters relevant part of path and update mask limits
@@ -127,33 +279,6 @@ class AnalyzerNode(Node):
 
         loc_times = loc_points[:, 3]
         loc_mask = (loc_times >= start_time) & (loc_times <= finish_time)
-        loc_points = loc_points[loc_mask]
-
-        # remove suspicious entries (legacy)
-        # remove all entries with smaller timestamp then previous entry
-        # this is NOT the best way to do this, but this is the way, the previous version did it and therefore necessary to compare the two version
-        # todo update later: remove those entries, where (time_now (logging) < time of recording): these entries must be corrupted
-        # from there, maybe remove more entries depending on plausibility
-        pos_times = pos_points[:, 3]
-        pos_mask = np.zeros(len(pos_points), dtype=bool)
-        pos_mask[-1] = True
-
-
-        for i in range(len(pos_points) - 1):
-            if pos_times[i] < pos_times[i + 1]:
-                pos_mask[i] = True
-
-        pos_points = pos_points[pos_mask]
-
-
-        loc_times = loc_points[:, 3]
-        loc_mask = np.zeros(len(loc_points), dtype=bool)
-        loc_mask[-1] = True
-
-        for i in range(len(loc_points) - 1):
-            if loc_times[i] < loc_times[i + 1]:
-                loc_mask[i] = True
-
         loc_points = loc_points[loc_mask]
 
 
