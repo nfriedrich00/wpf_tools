@@ -48,77 +48,23 @@ def get_reference_point_np(time_reference: float, points: tuple[np.array]):
     multiplier = (time_reference - time_start) / time_separation
     return points[0] + multiplier * (points[1] - points[0])
 
-def filter_points_loc(points: np.array):
-    ''' Filter corrupted measurements from localization points:
-        1. Sort by timestamp
-        2. Keep first and last
-        3. Inspect points with the same timestamp (always exacly two points)
-            and keep the point closer to the neigbors
-        4. Remove points with logging time before recording time
-    This seems to removes all wrong points and only wrong points.
-    '''
-    timestamps = points[:, 3]
-    sorted_indices = np.argsort(timestamps)
-    sorted_points = points[sorted_indices]
-    
-    def euclidean_distance(a, b):
-        return np.linalg.norm(a[:2] - b[:2])    
 
-    filtered_points = []
-    removed_points = []
-    n = len(sorted_points)
-
-    for i in range(n):
-        if i == 0 or i == n-1:
-            filtered_points.append(sorted_points[i])
-
-        else:
-            prev_point = sorted_points[i-1]
-            curr_point = sorted_points[i]
-            next_point = sorted_points[i+1]
-
-            if curr_point[3] == prev_point[3] or curr_point[3] == next_point[3]:
-            # same timestamp as one of the neighbors -> one of them must be wrong
-                curr_distance = euclidean_distance(curr_point, prev_point)
-                next_distance = euclidean_distance(next_point, prev_point)
-                
-                if curr_distance < next_distance:
-                    filtered_points.append(curr_point)
-
-                else:
-                    removed_points.append(curr_point)
-
-            else:
-                if curr_point[4] < curr_point[3]:
-                # logged before recorded -> something went wrong -> better remove
-                    removed_points.append(curr_point)
-
-                else:
-                    filtered_points.append(curr_point)
-
-    filtered_points = np.array(filtered_points)
-
-    return filtered_points
-
-
-def filter_points_pos(points: np.array):
-    ''' Filter corrupted measurements from ground truth data points:
-        1. Sort by Euclidean distance to previous point (first point is origin).
+def filter_points(points: np.array):
+    ''' Filter corrupted measurements from logs:
+        1. Sort by Euclidean distance to previous point (in R3: x-y-timestamp).
         2. Remove if time increment is negative
             (moving forward in place but backward in time)
-        3. Sort by timestamp
+        3. Then sort by timestamp
         4. Remove points that cannot be reached with maximum speed.
-    This seems to removes >99.5% of wrong points and <99.98% of correct points.
-    '''    
+    This seems to removes all wrong points and none of the correct points.
+    '''      
     filtered_points = []
     removed_points = []
 
-# maybe the robot appears to be moving faster than possible due to
-# inaccurate timestamps. Increase max speed with mulitplier.
     max_speed = 1.0
-    multiplier = 2.0
+    speed_multiplier = 2.0
     
-    def euclidean_distance(a, b):
+    def euclidean_distance_2d(a, b):
         return np.linalg.norm(a[:2] - b[:2])
     
     def sort_points(points):
@@ -126,14 +72,13 @@ def filter_points_pos(points: np.array):
         if n == 0:
             return points
         
-        # start point is point closest to origin
-        start_index = np.argmin(np.linalg.norm(points[:, :2], axis=1))
+        start_index = np.argmin(np.linalg.norm(points[:, :3] - points[0][:3], axis=1))
         sorted_points = [points[start_index]]
         remaining_points = np.delete(points, start_index, axis=0)
         
         while len(remaining_points) > 0:
             last_point = sorted_points[-1]
-            distances = np.linalg.norm(remaining_points[:, :2] - last_point[:2], axis=1)
+            distances = np.linalg.norm(remaining_points[:, :3] - last_point[:3], axis=1)
             next_index = np.argmin(distances)
             sorted_points.append(remaining_points[next_index])
             remaining_points = np.delete(remaining_points, next_index, axis=0)
@@ -148,7 +93,6 @@ def filter_points_pos(points: np.array):
         filtered_points.clear()
         removed = 0
         n = len(sorted_points)
-        print(n)
         for i in range(n-1):
             curr_point = sorted_points[i]
             next_point = sorted_points[i+1]
@@ -174,7 +118,7 @@ def filter_points_pos(points: np.array):
         curr_point = sorted_points[i]
         next_point = sorted_points[i+1]
 
-        distance = euclidean_distance(curr_point, next_point)
+        distance = euclidean_distance_2d(curr_point, next_point)
         time_sep = next_point[3] - curr_point[3]
         # this is always positive due to previous step
         if time_sep == 0.0:
@@ -182,7 +126,8 @@ def filter_points_pos(points: np.array):
         else:
             speed = distance/time_sep
 
-        if speed > max_speed * multiplier:
+        if speed > max_speed * speed_multiplier:
+            # use multiplier to prevent filtering of points with 1.1 * max_speed
         # implausible movement: current point could not be reached, unless
         # previous point was wrong
             removed_points.append(curr_point)
@@ -193,7 +138,6 @@ def filter_points_pos(points: np.array):
     filtered_points = np.array(filtered_points)
 
     return filtered_points
-
 
 class AnalyzerNode(Node):
     """ Analyzer Node, which analyzes the data logged during any
@@ -268,8 +212,8 @@ class AnalyzerNode(Node):
                                 loc_data[key]['time'],
                                 key] for key in loc_data])
         
-        loc_points = filter_points_loc(loc_points)
-        pos_points = filter_points_pos(pos_points)
+        loc_points = filter_points(loc_points)
+        pos_points = filter_points(pos_points)
         
         # restrict to points within relevant time interval
         # todo add threshould: find timestamp, when robot pos enters relevant part of path and update mask limits
