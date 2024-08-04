@@ -13,10 +13,11 @@ sources=( "/opt/ros/iron/setup.bash" "/home/ubuntu/Documents/ros2/dmc_11_ws/inst
 init_sources=0
 run_headless=1
 quiet=0
+rm_results=1
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "w:g:p:c:t:s:r:o:v:q:m:" opt; do
+while getopts "w:g:p:c:t:s:r:o:v:q:m:z:" opt; do
     case ${opt} in
         w )
             waypoints_filepath=$OPTARG
@@ -63,6 +64,19 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:" opt; do
                 fi
             else
                 echo "Invalid value for run_headless: $OPTARG"
+                exit 1
+            fi
+            ;;
+        z)
+            # accept 0,1,true,false,True,False,TRUE,FALSE and convert to 0,1
+            if [ $OPTARG == "0" ] || [ $OPTARG == "1" ] || [ $OPTARG == "true" ] || [ $OPTARG == "false" ] || [ $OPTARG == "True" ] || [ $OPTARG == "False" ] || [ $OPTARG == "TRUE" ] || [ $OPTARG == "FALSE" ]; then
+                if [ $OPTARG == "0" ] || [ $OPTARG == "false" ] || [ $OPTARG == "False" ] || [ $OPTARG == "FALSE" ]; then
+                    rm_results=0
+                else
+                    rm_results=1
+                fi
+            else
+                echo "Invalid value for rm_results: $OPTARG"
                 exit 1
             fi
             ;;
@@ -124,7 +138,9 @@ function remove_results {
     if [ $quiet -eq 0 ]; then
         echo "Removing results..."
     fi
-    rm -rf $results_dir
+    if [ $rm_results -ne 0 ]; then
+        rm -rf $results_dir
+    fi
 }
 
 # function for checking if file exists

@@ -16,6 +16,7 @@ setup(
         (os.path.join("share", package_name, "launch"), glob("launch/*.launch.py")),
         (os.path.join("share", package_name, "config"), glob("config/*")),
         (os.path.join("share", package_name, "include"), glob("include/*")),
+        (os.path.join("lib", package_name), [os.path.join(package_name, "wpf_utils.py")]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
