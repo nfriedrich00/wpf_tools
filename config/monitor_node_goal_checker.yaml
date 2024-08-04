@@ -1,0 +1,9 @@
+/monitor_node:
+  ros__parameters:
+    domain: goal_checker
+    message_type: Empty
+    min_f: 0.5
+    start_type_description_service: true
+    topic_name: /goal_checker
+    update_f: 1.0
+    use_sim_time: false

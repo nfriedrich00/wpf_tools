@@ -1,8 +1,7 @@
-# 2 waypoints, second one is 25 m east of first one.
 waypoints:
 - latitude: 50.91836083025825
   longitude: 13.340998698814374
   yaw: 0.0
-- latitude: 50.918360829730545
-  longitude: 13.341354295304747
+- latitude: 50.91836082889396
+  longitude: 13.341567653211182
   yaw: 0.0

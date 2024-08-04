@@ -10,6 +10,7 @@ from rclpy.node import Node
 
 from nav_msgs.msg import Path, Odometry
 from geometry_msgs.msg import Pose, Twist
+from std_msgs.msg import Empty
 
 
 def euler_from_quaternion(orientation):
@@ -89,6 +90,8 @@ class GoalChecker(Node):
         )
         self.subscription_localization # prevent unused variable warning
 
+        self.publisher_ = self.create_publisher(Empty, '/goal_checker', 10)
+
 
     def listener_callback_twist(self, msg):
         ''' This method is called when receiving Twist commands to move
@@ -126,6 +129,8 @@ class GoalChecker(Node):
         with open(self.logfile, 'a', encoding = 'utf-8') as file:
             yaml.dump(data, file, default_flow_style=False)
             yaml.dump(data1, file, default_flow_style=False)
+
+        self.publisher_.publish(Empty())
 
         raise SystemExit
 

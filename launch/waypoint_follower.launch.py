@@ -19,25 +19,38 @@ from launch.substitutions import NotSubstitution
 
 def generate_launch_description():
     this_pkg_share = get_package_share_directory('wpf_tools')
-    config_filepath = os.path.join(this_pkg_share, 'config/waypoint_follower_config.yaml')
 
-    session_start_time = datetime.datetime.now()
-    sst = session_start_time
-    session_start_time_string = f"{sst.year}{sst.month:02d}{sst.day:02d}{sst.hour:02d}{sst.minute:02d}{sst.second:02d}"
-    #waypoints_filepath = LaunchConfiguration('waypoints_filepath')
-    #decl_waypoints_filepath = DeclareLaunchArgument('waypoints_filepath', default_value=os.path.join(this_pkg_share, 'config/waypoints.yaml'), description='Path to the waypoints yaml file.')
+    waypoints_filepath_default = os.path.join(this_pkg_share, 'config/waypoints_line.yaml')
+    waypoints_filepath = LaunchConfiguration('waypoints_filepath')
+    decl_waypoints_filepath = DeclareLaunchArgument('waypoints_filepath', default_value=waypoints_filepath_default)
 
+    gps_error_simulator_config_filepath_default = os.path.join(this_pkg_share, 'config/gps_error_simulator_config.yaml')
+    gps_error_simulator_config_filepath = LaunchConfiguration('gps_error_simulator_config_filepath')
+    decl_gps_error_simulator_config_filepath = DeclareLaunchArgument('gps_error_simulator_config_filepath', default_value=gps_error_simulator_config_filepath_default)
+
+    nav_planner_config_filepath_default = os.path.join(this_pkg_share, 'config/planner_straight_line.yaml')
+    nav_planner_config_filepath = LaunchConfiguration('nav_planner_config_filepath')
+    decl_nav_planner_config_filepath = DeclareLaunchArgument('nav_planner_config_filepath', default_value=nav_planner_config_filepath_default)
+
+    nav_controller_config_filepath_default = os.path.join(this_pkg_share, 'config/controller_rpp.yaml')
+    nav_controller_config_filepath = LaunchConfiguration('nav_controller_config_filepath')
+    decl_nav_controller_config_filepath = DeclareLaunchArgument('nav_controller_config_filepath', default_value=nav_controller_config_filepath_default)
 
     run_headless = LaunchConfiguration('run_headless')
     decl_run_headless = DeclareLaunchArgument('run_headless', default_value='False')
 
-    with open(config_filepath, 'r') as config_file:
-        config_data = yaml.safe_load(config_file)
+    session_start_time = datetime.datetime.now()
+    sst = session_start_time
+    session_start_time_string = f"{sst.year}{sst.month:02d}{sst.day:02d}{sst.hour:02d}{sst.minute:02d}{sst.second:02d}"
 
-    waypoints_filepath = os.path.expanduser("~") + config_data.get("waypoints_filepath")
-    gps_error_simulator_config_filepath = os.path.expanduser("~") + config_data.get("gps_error_simulator_config_filepath")
-    planner_config_filepath = os.path.expanduser("~") + config_data.get("nav_planner_config_filepath")
-    controller_config_filepath = os.path.expanduser("~") + config_data.get("nav_controller_config_filepath")
+    start_monitoring = GroupAction(
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(PathJoinSubstitution(
+                    [FindPackageShare('wpf_tools'), 'launch', 'monitor.launch.py']))
+            )
+        ]
+    )
     
     start_rviz = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(PathJoinSubstitution(
@@ -102,16 +115,12 @@ def generate_launch_description():
     )
 
 
-    start_navigation = GroupAction(
-        actions=[
-            IncludeLaunchDescription(
+    start_navigation = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(PathJoinSubstitution(
                     [FindPackageShare('claudi_navigation'), 'launch', 'navigation.launch.py'])),
-                launch_arguments = {'planner_config_filepath' : planner_config_filepath,
-                                    'controller_config_filepath' : controller_config_filepath}.items()
+                launch_arguments = {'planner_config_filepath' : nav_planner_config_filepath,
+                                    'controller_config_filepath' : nav_controller_config_filepath}.items()
             )
-        ]
-    )
 
     # The navigation starts, as soon as the localization is ready.
     localization_ready_callback = RegisterEventHandler(
@@ -193,7 +202,12 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
+    ld.add_action(decl_waypoints_filepath)
+    ld.add_action(decl_gps_error_simulator_config_filepath)
+    ld.add_action(decl_nav_planner_config_filepath)
+    ld.add_action(decl_nav_controller_config_filepath)
     ld.add_action(decl_run_headless)
+    ld.add_action(start_monitoring)
     ld.add_action(start_rviz)
     ld.add_action(start_gazebo)
     ld.add_action(start_ground_truth_publisher)
@@ -204,5 +218,6 @@ def generate_launch_description():
     ld.add_action(wait_for_navigation)
     ld.add_action(navigation_ready_callback)
 
+       
 
     return ld

@@ -1,0 +1,9 @@
+/monitor_node:
+  ros__parameters:
+    domain: localization
+    message_type: Odometry
+    min_f: 0.5
+    start_type_description_service: true
+    topic_name: /odometry/global
+    update_f: 1.0
+    use_sim_time: false
