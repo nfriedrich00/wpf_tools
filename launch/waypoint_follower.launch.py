@@ -42,7 +42,7 @@ def generate_launch_description():
     session_start_time = datetime.datetime.now()
     sst = session_start_time
     session_start_time_string = f"{sst.year}{sst.month:02d}{sst.day:02d}{sst.hour:02d}{sst.minute:02d}{sst.second:02d}"
-    
+
     start_monitoring = GroupAction(
         actions=[
             IncludeLaunchDescription(
