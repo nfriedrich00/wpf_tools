@@ -290,8 +290,8 @@ class AnalyzerNode(Node):
             closest_point = pos_points[closest_index]
             second_closest_point = pos_points[second_closest_index]
             
-            ref_point = get_reference_point_np(point[3], (closest_point,
-                                                          second_closest_point))
+            ref_point = get_reference_point_np(point[3], (closest_point[:-1],
+                                                          second_closest_point[:-1]))
             distance = np.linalg.norm(point[:2] - ref_point[:2])
 
             avg_loc_error += distance / len(loc_points)            
