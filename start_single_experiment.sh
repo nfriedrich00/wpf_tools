@@ -101,7 +101,7 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:z:" opt; do
 done
 
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill-session -t "$SESSION"; sleep 10; exit 1' SIGINT
+trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill-session -t "$SESSION"; sleep 10; ./kill_gazebo.sh; exit 1' SIGINT
 
 # define function to run evaluation
 function analyze_data {
