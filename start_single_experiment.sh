@@ -100,9 +100,6 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:z:" opt; do
     esac
 done
 
-# set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting...";tmux kill-session -t "$SESSION"; sleep 10; ./kill_gazebo.sh; exit 1' SIGINT
-
 # define function to run evaluation
 function analyze_data {
     if [ $quiet -eq 0 ]; then
@@ -163,12 +160,15 @@ function resolve_path {
 
 # function to kill unsucessfull tmux session
 function kill_session {
-    tmux send-keys -t 'window 0' C-c
+    tmux send-keys -t "$1:0" C-c
     sleep 10
     tmux kill-session -t "$1"
     sleep 5 # some nodes keep running for some time
     remove_results
 }
+
+# set handler for SIGINT and kill all tmux sessions starting with $SESSION
+trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting..."; kill_session '$SESSION'; exit 1' SIGINT
 
 # resolve all file paths
 waypoints_filepath=$(resolve_path $waypoints_filepath)
