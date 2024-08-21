@@ -8,8 +8,6 @@ from geometry_msgs.msg import Point
 from geographic_msgs.msg import GeoPoint
 
 class WaypointGenerator(Node):
-    mysterious_offset_in_x_direction_in_m = -0.219 # this is - y offset from localization?
-    mysterious_offset_in_y_direction_in_m = -0.127
 
     def __init__(self):
         super().__init__('waypoint_generator_node')
@@ -99,9 +97,6 @@ class WaypointGenerator(Node):
         for map_waypoint in waypoints:
             #convert to LL
             self.req.map_point:Point = map_waypoint
-            #mysterious offset, why are x and y directions and sign switched in comparison to localization?
-            self.req.map_point.x += self.mysterious_offset_in_x_direction_in_m
-            self.req.map_point.y += self.mysterious_offset_in_y_direction_in_m
             self.future = self.cli.call_async(self.req)
             rclpy.spin_until_future_complete(self, self.future)
             geopoint = self.future.result().ll_point
