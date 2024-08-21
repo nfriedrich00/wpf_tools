@@ -1,7 +1,8 @@
+# Straight 40m line in east direction
 waypoints:
-- latitude: 50.91836083025825
-  longitude: 13.340998698814374
+- latitude: 50.91836
+  longitude: 13.341
   yaw: 0.0
-- latitude: 50.91836082889396
-  longitude: 13.341567653211182
+- latitude: 50.91836
+  longitude: 13.34156952
   yaw: 0.0

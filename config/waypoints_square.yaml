@@ -1,32 +1,32 @@
-# square wave, 20m wavelength, 7.5m amplitude
+# Goal is 40m in east direction = 2x square wave with A=3.75m and lambda = 20m
 waypoints:
-- latitude: 50.91836083025825
-  longitude: 13.340998698814374
+- latitude: 50.91836
+  longitude: 13.341
   yaw: 0.0
-- latitude: 50.91836083023938
-  longitude: 13.341069818110412
+- latitude: 50.91836
+  longitude: 13.34107119
   yaw: 0.0
-- latitude: 50.91829339680249
-  longitude: 13.341069818013052
+- latitude: 50.91829255
+  longitude: 13.34107119
   yaw: 0.0
-- latitude: 50.91829339663281
-  longitude: 13.341212056402538
+- latitude: 50.91829255
+  longitude: 13.34121357
   yaw: 0.0
-- latitude: 50.91836083007161
-  longitude: 13.341212056705546
+- latitude: 50.91836
+  longitude: 13.34121357
   yaw: 0.0
-- latitude: 50.918360829730545
-  longitude: 13.341354295304747
+- latitude: 50.91836
+  longitude: 13.34135595
   yaw: 0.0
-- latitude: 50.918293396289805
-  longitude: 13.341354294796096
+- latitude: 50.91829255
+  longitude: 13.34135595
   yaw: 0.0
-- latitude: 50.91829339577349
-  longitude: 13.341496533193723
+- latitude: 50.91829255
+  longitude: 13.34149833
   yaw: 0.0
-- latitude: 50.918360829216155
-  longitude: 13.34149653390802
+- latitude: 50.91836
+  longitude: 13.34149833
   yaw: 0.0
-- latitude: 50.91836082889396
-  longitude: 13.341567653211182
+- latitude: 50.91836
+  longitude: 13.34156952
   yaw: 0.0
