@@ -11,9 +11,9 @@ from std_msgs.msg import String
 
 class GPSErrorSimulator(Node):
     message = NavSatFix()
-    # Add this to the lat/long in degree to add 1cm in Freiberg (50.91836/13.341)
-    lat_1_cm = 8.9928e-6
-    long_1_cm = 1.42653e-5
+    # Add this to the lat/long in degree to add 1m in Freiberg (50.91836/13.341)
+    lat_1_m = 8.9928e-6
+    long_1_m = 1.423808439e-5
 
     def __init__(self):
         super().__init__('gps_error_simulator')
@@ -77,8 +77,8 @@ class GPSErrorSimulator(Node):
         self.covariance_x = 0.0
         self.covariance_y = 0.0
 
-        self.variance_x = float()
-        self.variance_y = float()
+        self.variance_x = 0.0
+        self.variance_y = 0.0
 
 
         # Runtime error when logging set to true after init. todo create log folder when param set to true at runtime?
@@ -189,16 +189,22 @@ class GPSErrorSimulator(Node):
         noise_y_in_m = noise_distance * sin(noise_direction)
         gauss_sigma_x = gauss_sigma * cos(noise_direction)
         gauss_sigma_y = gauss_sigma * sin(noise_direction)
-        self.variance_x = gauss_sigma_x ** 2
-        self.variance_y = gauss_sigma_y ** 2
+        self.variance_x += gauss_sigma_x ** 2
+        self.variance_y += gauss_sigma_y ** 2
         return [noise_x_in_m, noise_y_in_m]
     
     def calculate_spike_in_m(self):
         if random.random() < self.get_parameter('spikes_probability').value:
-            spike_distance = random.gauss(self.get_parameter('spikes_mean').value, self.get_parameter('spikes_std').value)
+            mean = self.get_parameter('spikes_mean').value
+            stdev = self.get_parameter('spikes_std').value
+            spike_distance = random.gauss(mean, stdev)
             spike_direction = self.get_parameter('spikes_direction').value if self.get_parameter('spikes_direction').value is not None else random.uniform(0, 2 * pi)
             spike_x_in_m = spike_distance * cos(spike_direction)
             spike_y_in_m = spike_distance * sin(spike_direction)
+            stdev_x = stdev * cos(spike_direction)
+            stdev_y = stdev * sin(spike_direction)
+            self.variance_x += stdev_x ** 2
+            self.variance_y += stdev_y ** 2
         else:
             spike_x_in_m = 0.0
             spike_y_in_m = 0.0
@@ -228,8 +234,8 @@ class GPSErrorSimulator(Node):
     
     def send_message(self, unmodified_message:NavSatFix):
         message_to_send = unmodified_message
-        message_to_send.latitude += self.y_modifier_in_m * self.lat_1_cm
-        message_to_send.longitude += self.x_modifier_in_m * self.long_1_cm
+        message_to_send.latitude += self.y_modifier_in_m * self.lat_1_m
+        message_to_send.longitude += self.x_modifier_in_m * self.long_1_m
         message_to_send.position_covariance_type = 2 # = COVARIANCE_TYPE_DIAGONAL_KNOWN
         # x direction is east per default, y is north
         # covariance matrix/list[9]: (ENU - east-north-up = x-y-z
@@ -241,6 +247,10 @@ class GPSErrorSimulator(Node):
         self.publisher_.publish(message_to_send)
         if self.logs_enabled:
             self.log_message_sent(modified_message=message_to_send)
+        self.variance_x = 0.0
+        self.variance_y = 0.0
+        self.covariance_x = 0.0
+        self.covariance_y = 0.0
 
 
     def log_message_received(self, original_message):
