@@ -4,7 +4,6 @@ gps_error_simulator:
     input_topic: '/emlid/fix'
     output_topic: '/emlid/modified'
     enable_logs: True
-    enable_mysterious_offset_correction: True
     enable_noise: False
     enable_offset: False
     enable_spikes: False

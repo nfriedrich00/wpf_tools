@@ -31,8 +31,6 @@ class GPSErrorSimulator(Node):
         input_topic:String = input_topic_value
         output_topic:String = output_topic_value
 
-        self.declare_parameter('enable_mysterious_offset_correction', True)
-        self.mysterious_offset_correction_enabled = self.get_parameter('enable_mysterious_offset_correction').value
         self.declare_parameter('enable_logs', True)
         self.logs_enabled = self.get_parameter('enable_logs').value
 
@@ -126,22 +124,12 @@ class GPSErrorSimulator(Node):
 
         self.covariance_x = 0.0
         self.covariance_y = 0.0
-        if self.mysterious_offset_correction_enabled:
-            msg = self.correct_mysterious_offset(msg) # This is now the original message. There never was some unexplainable error
 
         if self.logs_enabled:
             self.log_message_received(original_message = msg)
         
         self.process_message(original_message = msg)
         # process message includes: calculation of all selected error types, application and publishing/queuing
-
-    
-    def correct_mysterious_offset(self, msg): # mysterious offset when using gps localization why?
-        offset_in_x_direction_in_m = 0.127
-        offset_in_y_direction_in_m = 0.219
-        msg.latitude += self.lat_1_cm * offset_in_y_direction_in_m
-        msg.longitude += self.long_1_cm * offset_in_x_direction_in_m
-        return msg
 
     def process_message(self, original_message):
         noise_enabled = self.get_parameter('enable_noise').value
