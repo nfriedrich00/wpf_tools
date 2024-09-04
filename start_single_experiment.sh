@@ -1,14 +1,23 @@
 #! /bin/bash
 
+export DISPLAY=:1
+
+if [ $(command -v tmux) ]; then
+echo "TMUX already installed"
+else
+    sudo apt update; 
+    sudo apt install -y tmux;
+fi 
+
 SESSION="Experiment"
 max_runtime=300
 max_retries=20
-waypoints_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
-gnss_error_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
-nav_planner_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
-nav_controller_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/controller_rpp.yaml"
-results_dir="~/Documents/wpf/logs"
-output_file="~/Documents/wpf/results.yaml"
+waypoints_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
+gnss_error_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
+nav_planner_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
+nav_controller_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/controller_mppi.yaml"
+results_dir="/home/ubuntu/Documents/wpf/logs"
+output_file="/home/ubuntu/Documents/wpf/results.yaml"
 sources=( "/opt/ros/iron/setup.bash" "/home/ubuntu/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/ubuntu/Documents/ros2/wpf_ws/install/setup.bash" )
 init_sources=0
 run_headless=1
@@ -372,5 +381,6 @@ tmux kill-session -t "$session_name"
 sleep 5 # some nodes keep running for some time
 
 # analyze data
+analyze_data
 remove_results
-exit 1
+exit 2
