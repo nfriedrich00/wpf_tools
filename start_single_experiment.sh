@@ -14,10 +14,11 @@ init_sources=0
 run_headless=1
 quiet=0
 rm_results=1
+logging_file="output.log"
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "w:g:p:c:t:s:r:o:v:q:m:z:" opt; do
+while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:" opt; do
     case ${opt} in
         w )
             waypoints_filepath=$OPTARG
@@ -33,6 +34,9 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:z:" opt; do
             ;;
         t )
             max_runtime=$OPTARG
+            ;;
+        l )
+            logging_file=$OPTARG
             ;;
         m ) 
             max_retries=$OPTARG
@@ -94,7 +98,8 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:z:" opt; do
             fi
             ;;
         \?)
-            echo "Usage: cmd [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-s source] [-r results_dir] [-o output_file]"
+            echo "Invalid option: $OPTARG" 1>&2
+            echo "Usage: start_single_experiment.sh -w waypoints_filepath -g gnss_error_filepath -p nav_planner_filepath -c nav_controller_filepath -t max_runtime -l logging_file -m max_retries -s source -r results_dir -o output_file -v run_headless -z rm_results -q quiet" 1>&2
             exit 1
             ;;
     esac
@@ -255,18 +260,18 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
     fi
 
     # check size of output.log and delete if it is too big
-    if [ -f output.log ]; then
-        size=$(du -k output.log | cut -f1)
+    if [ -f $logging_file ]; then
+        size=$(du -k $logging_file | cut -f1)
         if [ $size -gt 100000 ]; then
             if [ $quiet -eq 0 ]; then
-                echo "output.log is too big. Deleting..."
+                echo "$logging_file is too big. Deleting..."
             fi
-            rm output.log
+            rm $logging_file
         fi
     fi
 
-    # start the experiment
-    tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >>output.log'
+    # start the experiment - log output to logging file 
+    tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >> '"$logging_file" \;
     tmux rename-window -t 0 'window 0'
 
     sleep 1
