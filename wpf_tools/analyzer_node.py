@@ -222,6 +222,8 @@ class AnalyzerNode(Node):
         path_distance = get_distance_through_points(path_points)
         ground_truth_distance = get_distance_through_points(pos_points)
         localization_distance = get_distance_through_points(loc_points)
+        start_distance_to_goal = euclidean_distance_2d(path_points[0],
+                                                       path_points[-1])
         distance_to_goal = euclidean_distance_2d(pos_points[-1],
                                                  path_points[-1])
         self.get_logger().info('Got path distance: ' \
@@ -230,12 +232,15 @@ class AnalyzerNode(Node):
                                + str(ground_truth_distance))
         self.get_logger().info('Got localization distance: ' \
                                + str(localization_distance))
+        self.get_logger().info('Got start distance to goal: ' \
+                               + str(start_distance_to_goal))
         self.get_logger().info('Got distance to goal: ' \
                                + str(distance_to_goal))
 
         distance_data = {'path': float(path_distance),
                          'ground_truth': float(ground_truth_distance),
                          'localization': float(localization_distance),
+                         'start_distance_to_goal': float(start_goal_separation),
                          'distance_to_goal': float(distance_to_goal)}
         
         # Get speed
