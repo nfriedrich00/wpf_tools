@@ -230,6 +230,8 @@ class AnalyzerNode(Node):
                                + str(ground_truth_distance))
         self.get_logger().info('Got localization distance: ' \
                                + str(localization_distance))
+        self.get_logger().info('Got distance to goal: ' \
+                               + str(distance_to_goal))
 
         distance_data = {'path': float(path_distance),
                          'ground_truth': float(ground_truth_distance),
