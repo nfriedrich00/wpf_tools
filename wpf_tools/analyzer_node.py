@@ -240,7 +240,7 @@ class AnalyzerNode(Node):
         distance_data = {'path': float(path_distance),
                          'ground_truth': float(ground_truth_distance),
                          'localization': float(localization_distance),
-                         'start_distance_to_goal': float(start_goal_separation),
+                         'start_distance_to_goal': float(start_distance_to_goal),
                          'distance_to_goal': float(distance_to_goal)}
         
         # Get speed
