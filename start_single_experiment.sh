@@ -343,11 +343,13 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
 
     # start session for experiment
-    tmux new-session -d -s "$session_name-experiment" -x "$(tput cols)" -y "$(tput lines)" "$cmd" \; pipe-pane -o 'cat >> '"$logging_file" \;
+    tmux new-session -d -s "$session_name-experiment" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >> '"$logging_file" \;
+    tmux send-keys -t "$session_name-experiment" "$cmd" C-m
 
     # start session for rosbag recording
     if [ $record_rosbag -eq 1 ]; then
-        tmux new-session -d -s "$session_name-rosbag" "cd $record_rosbag_path ; ros2 bag record -a" \; pipe-pane -o 'cat >> '"$logging_file" \;
+        tmux new-session -d -s "$session_name-rosbag" \; pipe-pane -o 'cat >> '"$logging_file" \;
+        tmux send-keys -t "$session_name-rosbag" "cd $record_rosbag_path ; ros2 bag record -a" C-m
     fi
 
     sleep 1
