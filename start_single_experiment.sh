@@ -276,6 +276,15 @@ else
     # check if rosbag path exists
     if [ -d "$record_rosbag_path" ]; then
         record_rosbag=1
+
+        # find a unique rosbag path
+        i=0
+        record_rosbag_path_base=$record_rosbag_path
+        record_rosbag_path="$record_rosbag_path_base/bag-$i"
+        while [[ -d "$record_rosbag_path" ]]; do
+            ((i++))
+            record_rosbag_path="$record_rosbag_path_base/bag-$i"
+        done
     else 
         if [ $quiet -eq 0 ]; then
             echo "Rosbag path $record_rosbag_path does not exist or is not a directory"
@@ -349,7 +358,7 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
     # start session for rosbag recording
     if [ $record_rosbag -eq 1 ]; then
         tmux new-session -d -s "$session_name-rosbag" \; pipe-pane -o 'cat >> '"$logging_file" \;
-        tmux send-keys -t "$session_name-rosbag" "cd $record_rosbag_path ; ros2 bag record -a" C-m
+        tmux send-keys -t "$session_name-rosbag" "ros2 bag record -a -o $record_rosbag_path" C-m
     fi
 
     sleep 1
