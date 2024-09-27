@@ -155,7 +155,7 @@ function remove_results {
         echo "Removing results..."
     fi
     if [ $rm_results -ne 0 ]; then
-        rm -rf "$results_dir"/*
+        rm -rf "$results_dir/*"
     fi
 }
 
@@ -273,17 +273,14 @@ else
         echo "Rosbag path set to $record_rosbag_path"
     fi
 
-    # check if rosbag path exists and increment name with counter until a unique name is found
-    while [ -f $record_rosbag_path ]; do
-        record_rosbag_path="${record_rosbag_path%.*}_$i.${record_rosbag_path##*.}"
-        ((i++))
-    done
-
-    if [ $quiet -eq 0 ]; then
-        echo "Unique rosbag path found: $record_rosbag_path"
+    # check if rosbag path exists
+    if [ -d "$record_rosbag_path" ]; then
+        record_rosbag=1
+    else 
+        if [ $quiet -eq 0 ]; then
+            echo "Rosbag path $record_rosbag_path does not exist or is not a directory"
+        fi
     fi
-
-    record_rosbag=1
 fi
 
 
@@ -350,7 +347,7 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
     # start session for rosbag recording
     if [ $record_rosbag -eq 1 ]; then
-        tmux new-session -d -s "$session_name-rosbag" "ros2 bag record -a -o $record_rosbag_path" \; pipe-pane -o 'cat >> '"$logging_file" \;
+        tmux new-session -d -s "$session_name-rosbag" "cd $record_rosbag_path ; ros2 bag record -a" \; pipe-pane -o 'cat >> '"$logging_file" \;
     fi
 
     sleep 1
