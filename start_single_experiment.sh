@@ -183,12 +183,6 @@ function kill_session {
     sleep 10
     tmux kill-session -t "$1"
     sleep 5 # some nodes keep running for some time
-    remove_results
-
-    # remove rosbag if it was recorded
-    if [ $record_rosbag -eq 1 ]; then
-        rm -rf $record_rosbag_path
-    fi
 }
 
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
@@ -272,7 +266,7 @@ else
     while [ -f $record_rosbag_path ]; do
         record_rosbag_path="${record_rosbag_path%.*}_$i.${record_rosbag_path##*.}"
         ((i++))
-    fi
+    done
 
     if [ $quiet -eq 0 ]; then
         echo "Unique rosbag path found: $record_rosbag_path"
@@ -328,23 +322,6 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
         fi
     fi
 
-    # start the experiment - log output to logging file 
-
-    # start session for experiment
-    tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >> '"$logging_file" \;
-    tmux rename-window -t 0 'window 0'
-
-    # start session for rosbag recording
-    if [ $record_rosbag -eq 1 ]; then
-        tmux new-window -t "$session_name" -n 'rosbag' \; pipe-pane -o 'cat >> '"$logging_file" \;
-        tmux send-keys -t 'rosbag:0' "ros2 bag record -a -o $record_rosbag_path" C-m
-    fi
-
-    sleep 1
-    if [ $quiet -eq 0 ]; then
-        echo "Start experiment - Retries: $retries, started: $started" 
-    fi
-
     # construct command to execute with tmux
     if [ $run_headless -eq 1 ]; then
         cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
@@ -356,8 +333,19 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
         echo "Executing command: $cmd"
     fi
 
-    # execute command in tmux
-    tmux send-keys -t 'window 0' "$cmd" C-m
+
+    # start session for experiment
+    tmux new-session -d -s "$session_name-experiment" -x "$(tput cols)" -y "$(tput lines)" "$cmd" \; pipe-pane -o 'cat >> '"$logging_file" \;
+
+    # start session for rosbag recording
+    if [ $record_rosbag -eq 1 ]; then
+        tmux new-session -d -s "$session_name-rosbag" "ros2 bag record -a -o $record_rosbag_path" \; pipe-pane -o 'cat >> '"$logging_file" \;
+    fi
+
+    sleep 1
+    if [ $quiet -eq 0 ]; then
+        echo "Start experiment - Retries: $retries, started: $started" 
+    fi
 
     start_time=$(date +%s)
     ((retries++))
@@ -377,16 +365,14 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
     fi
 
     if [ $kill -eq 1 ]; then
-
-        # kill session for rosbag recording
         if [ $record_rosbag -eq 1 ]; then
-            tmux send-keys -t 'rosbag:0' C-c
-            sleep 10
-            tmux kill-session -t "$session_name"
-            sleep 5 # some nodes keep running for some time
+            kill_session "$session_name-rosbag"
+            # remove rosbag file
+            rm -rf $record_rosbag_path
         fi
-
-        kill_session "$session_name"
+        kill_session "$session_name-experiment"
+        remove_results
+        
 
         kill=0
         continue
@@ -401,19 +387,12 @@ done
 
 # exit if we did not manage to start simulation
 if [ $started -eq 0 ]; then
-
-    # kill session for rosbag recording
     if [ $record_rosbag -eq 1 ]; then
-        tmux send-keys -t 'rosbag:0' C-c
-        sleep 10
-        tmux kill-session -t "$session_name"
-        sleep 5 # some nodes keep running for some time
+        kill_session "$session_name-rosbag"
+        # remove rosbag file
+        rm -rf $record_rosbag_path
     fi
-
-    tmux send-keys -t 'window 0' C-c
-    sleep 10
-    tmux kill-session -t "$session_name"
-    sleep 5 # some nodes keep running for some time
+    kill_session "$session_name-experiment"
 
     # analyze data
     remove_results
@@ -429,22 +408,25 @@ while [ $elapsed_time -lt $max_runtime ]; do
             echo "Goal reached after $elapsed_time seconds"
             echo "Ending..."
         fi
-        tmux send-keys -t 'window 0' C-c
+
+        # send SIGINT to the tmux sessions
+        tmux send-keys -t "$session_name-experiment" C-c
         sleep 10
+
+        if [ $record_rosbag -eq 1 ]; then
+            tmux send-keys -t "$session_name-rosbag" C-c
+        fi
+
+        sleep 5
         # wait for results to be written
         check_results
 
         # kill session
-        tmux kill-session -t "$session_name"
-        sleep 5 # some nodes keep running for some time
-        
-        # kill recording
+        tmux kill-session -t "$session_name-experiment"
         if [ $record_rosbag -eq 1 ]; then
-            tmux send-keys -t 'rosbag:0' C-c
-            sleep 10
-            tmux kill-session -t "$session_name"
-            sleep 5 # some nodes keep running for some time
+            tmux kill-session -t "$session_name-rosbag"
         fi
+        sleep 5 # some nodes keep running for some time
 
         # analyze data
         analyze_data
@@ -465,18 +447,10 @@ done
 # timeout
 echo "Timeout, killing..."
 
-# kill session for rosbag recording
+kill_session "$session_name-experiment"
 if [ $record_rosbag -eq 1 ]; then
-    tmux send-keys -t 'rosbag:0' C-c
-    sleep 10
-    tmux kill-session -t "$session_name"
-    sleep 5 # some nodes keep running for some time
+    kill_session "$session_name-rosbag"
 fi
-
-tmux send-keys -t 'window 0' C-c
-sleep 10
-tmux kill-session -t "$session_name"
-sleep 5 # some nodes keep running for some time
 
 # analyze data
 analyze_data
