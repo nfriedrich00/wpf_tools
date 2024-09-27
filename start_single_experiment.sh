@@ -185,8 +185,19 @@ function kill_session {
     sleep 5 # some nodes keep running for some time
 }
 
+# function to kill all tmux sessions via killing the tmux server but sendint SIGINT to all tmux sessions
+function kill_all_sessions {
+    for s in $(tmux ls | cut -d: -f1); do
+        # send SIGINT to all windows in the session
+        tmux send-keys -t "$s:0" C-c
+    done
+    sleep 15
+    tmux kill-server
+    sleep 2
+}
+
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting..."; kill_session '$SESSION'; exit 1' SIGINT
+trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting..."; kill_all_sessions; exit 1' SIGINT
 
 # resolve all file paths
 waypoints_filepath=$(resolve_path $waypoints_filepath)
@@ -365,12 +376,11 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
     fi
 
     if [ $kill -eq 1 ]; then
+        kill_all_sessions
         if [ $record_rosbag -eq 1 ]; then
-            kill_session "$session_name-rosbag"
             # remove rosbag file
             rm -rf $record_rosbag_path
         fi
-        kill_session "$session_name-experiment"
         remove_results
         
 
@@ -387,12 +397,11 @@ done
 
 # exit if we did not manage to start simulation
 if [ $started -eq 0 ]; then
+    kill_all_sessions
     if [ $record_rosbag -eq 1 ]; then
-        kill_session "$session_name-rosbag"
         # remove rosbag file
         rm -rf $record_rosbag_path
     fi
-    kill_session "$session_name-experiment"
 
     # analyze data
     remove_results
@@ -416,16 +425,13 @@ while [ $elapsed_time -lt $max_runtime ]; do
         if [ $record_rosbag -eq 1 ]; then
             tmux send-keys -t "$session_name-rosbag" C-c
         fi
-
+        
         sleep 5
         # wait for results to be written
         check_results
 
         # kill session
-        tmux kill-session -t "$session_name-experiment"
-        if [ $record_rosbag -eq 1 ]; then
-            tmux kill-session -t "$session_name-rosbag"
-        fi
+        kill_all_sessions
         sleep 5 # some nodes keep running for some time
 
         # analyze data
@@ -447,10 +453,7 @@ done
 # timeout
 echo "Timeout, killing..."
 
-kill_session "$session_name-experiment"
-if [ $record_rosbag -eq 1 ]; then
-    kill_session "$session_name-rosbag"
-fi
+kill_all_sessions
 
 # analyze data
 analyze_data
