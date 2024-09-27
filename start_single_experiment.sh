@@ -155,7 +155,7 @@ function remove_results {
         echo "Removing results..."
     fi
     if [ $rm_results -ne 0 ]; then
-        rm -rf "$results_dir/*"
+        rm -rf $results_dir/*
     fi
 }
 
@@ -450,6 +450,19 @@ done
 # timeout
 echo "Timeout, killing..."
 
+# send SIGINT to the tmux sessions
+tmux send-keys -t "$session_name-experiment" C-c
+sleep 10
+
+if [ $record_rosbag -eq 1 ]; then
+    tmux send-keys -t "$session_name-rosbag" C-c
+fi
+
+sleep 5
+# wait for results to be written
+check_results
+
+# kill session
 kill_all_sessions
 
 # analyze data
