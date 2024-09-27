@@ -285,6 +285,10 @@ else
             ((i++))
             record_rosbag_path="$record_rosbag_path_base/bag-$i"
         done
+
+        if [ $quiet -eq 0 ]; then
+            echo "Unique rosbag path found: $record_rosbag_path"
+        fi
     else 
         if [ $quiet -eq 0 ]; then
             echo "Rosbag path $record_rosbag_path does not exist or is not a directory"
