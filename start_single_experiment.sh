@@ -155,7 +155,7 @@ function remove_results {
         echo "Removing results..."
     fi
     if [ $rm_results -ne 0 ]; then
-        rm -rf $results_dir
+        rm -rf "$results_dir"/*
     fi
 }
 
