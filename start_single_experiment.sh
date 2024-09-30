@@ -343,6 +343,9 @@ i=0
 retries=0
 kill=0
 
+# remove results from previous runs
+remove_results
+
 # loop until we successfully start the experiment or we reach the maximum number of retries
 while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
