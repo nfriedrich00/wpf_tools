@@ -2,24 +2,27 @@
 
 # run experiments for several times to get the average results
 
-# parse arguments, here we only need -k to specify the number of loops, other arguments will be stored in other_args
+# parse arguments
 loops=1
+start_script="./start_single_experiment.sh"
 other_args=""
-while getopts "k:" opt; do
+
+while getopts ":k:" opt; do
   case $opt in
-    k) loops=$OPTARG
-    continue
-    ;;
-    \?) echo "Invalid option -$OPTARG" >&2
-    ;;
+    k)
+      loops="$OPTARG"
+      ;;
   esac
-  other_args="$other_args $OPTARG"
 done
 
-# run experiments
-for ((i=1; i<=$loops; i++))
-do
+# shift processed options (excluding the first argument, which is the script name)
+shift $((OPTIND))
+
+# store remaining arguments in a variable, excluding '-k'
+other_args="$@"
+
+# pass remaining arguments to start_single_experiment.sh
+for ((i=1; i<=$loops; i++)); do
   echo "Run experiment $i"
-  # parse all arguments (execpt k) to start_single_experiment.sh
-  ./start_single_experiment.sh $@
+  "$start_script" "$@"  # Double quotes preserve arguments as individual words
 done
