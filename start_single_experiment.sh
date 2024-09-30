@@ -113,7 +113,7 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:b:" opt; do
             ;;
         \?)
             echo "Invalid option: $OPTARG" 1>&2
-            echo "Usage: start_single_experiment.sh -w waypoints_filepath -g gnss_error_filepath -p nav_planner_filepath -c nav_controller_filepath -t max_runtime -l logging_file -m max_retries -s source -r results_dir -o output_file -v run_headless -z rm_results -q quiet" 1>&2
+            echo "Usage: $0 [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-m max_retries] [-s source] [-r results_dir] [-o output_file] [-v run_headless] [-q quiet] [-z rm_results] [-l logging_file] [-b record_rosbag_path]" 1>&2
             exit 1
             ;;
     esac
