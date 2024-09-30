@@ -26,9 +26,28 @@ rm_results=1
 logging_file="output.log"
 record_rosbag_path=""
 
+function display_help {
+    echo "Usage: $0 [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-m max_retries] [-s source] [-r results_dir] [-o output_file] [-v run_headless] [-q quiet] [-z rm_results] [-l logging_file] [-b record_rosbag_path]"
+    echo "Options:"
+    echo "  -w waypoints_filepath: Path to the waypoints file"
+    echo "  -g gnss_error_filepath: Path to the GNSS error file"
+    echo "  -p nav_planner_filepath: Path to the navigation planner file"
+    echo "  -c nav_controller_filepath: Path to the navigation controller file"
+    echo "  -t max_runtime: Maximum runtime of the experiment in seconds"
+    echo "  -m max_retries: Maximum number of retries to start the experiment"
+    echo "  -s source: Source file to source before starting the experiment"
+    echo "  -r results_dir: Directory to store the results"
+    echo "  -o output_file: File to store the results"
+    echo "  -v run_headless: Run the experiment headless (0) or with GUI (1)"
+    echo "  -q quiet: Run the experiment in quiet mode (1) or verbose mode (0)"
+    echo "  -z rm_results: Remove the results directory (1) or keep it (0)"
+    echo "  -l logging_file: File to log the output of the experiment"
+    echo "  -b record_rosbag_path: Path to record the rosbag"
+}
+
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:b:" opt; do
+while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:b:h" opt; do
     case ${opt} in
         w )
             waypoints_filepath=$OPTARG
@@ -111,9 +130,14 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:b:" opt; do
             # where to store the rosbag
             record_rosbag_path=$OPTARG
             ;;
+
+        h)
+            display_help
+            exit 0
+            ;;
         \?)
             echo "Invalid option: $OPTARG" 1>&2
-            echo "Usage: $0 [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-m max_retries] [-s source] [-r results_dir] [-o output_file] [-v run_headless] [-q quiet] [-z rm_results] [-l logging_file] [-b record_rosbag_path]" 1>&2
+            display_help
             exit 1
             ;;
     esac
