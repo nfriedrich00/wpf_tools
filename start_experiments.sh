@@ -1,25 +1,28 @@
 #! /bin/bash
 
-max_runtime=300
-config_filepath=~/Documents/ros2/wpf_ws/install/wpf_tools/share/wpf_tools/config/waypoint_follower_config.yaml
+# run experiments for several times to get the average results
 
-# get the path of the script
-SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+# parse arguments
+loops=1
+start_script="./start_single_experiment.sh"
+other_args=""
 
-# store current path
-current_path=$(pwd)
-
-# set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected in start_experiments.sh! Exiting..."; cd "$current_path"; sleep 10; exit 1' SIGINT
-
-# switch to the script path
-cd $SCRIPTPATH
-
-# execute experiments
-while true; do
-    # call start_single_experiment.sh with the same arguments
-    ./start_single_experiment.sh -c $config_filepath -t $max_runtime
+while getopts ":k:" opt; do
+  case $opt in
+    k)
+      loops="$OPTARG"
+      ;;
+  esac
 done
 
-# switch back to the original path
-cd $current_path
+# shift processed options (excluding the first argument, which is the script name)
+shift $((OPTIND))
+
+# store remaining arguments in a variable, excluding '-k'
+other_args="$@"
+
+# pass remaining arguments to start_single_experiment.sh
+for ((i=1; i<=$loops; i++)); do
+  echo "Run experiment $i"
+  "$start_script" "$@"  # Double quotes preserve arguments as individual words
+done
