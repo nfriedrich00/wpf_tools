@@ -25,6 +25,7 @@ quiet=0
 rm_results=1
 logging_file="output.log"
 record_rosbag_path=""
+record_rosbag=0
 
 function display_help {
     echo "Usage: $0 [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-m max_retries] [-s source] [-r results_dir] [-o output_file] [-v run_headless] [-q quiet] [-z rm_results] [-l logging_file] [-b record_rosbag_path]"
@@ -175,10 +176,10 @@ function check_results {
 
 # function to remove results_dir and all its contents
 function remove_results {
-    if [ $quiet -eq 0 ]; then
-        echo "Removing results..."
-    fi
     if [ $rm_results -ne 0 ]; then
+        if [ $quiet -eq 0 ]; then
+            echo "Removing results..."
+        fi
         rm -rf $results_dir/*
     fi
 }
@@ -285,19 +286,21 @@ else
     exit 1
 fi
 
-# check if rosabag path is set
-if [ -z $record_rosbag_path ]; then
-    if [ $quiet -eq 0 ]; then
-        echo "No rosbag path set"
-    fi
-
-    record_rosbag=0
-else
+# check if rosabag path is not empty
+if [ ! -z "$record_rosbag_path" ]; then
     if [ $quiet -eq 0 ]; then
         echo "Rosbag path set to $record_rosbag_path"
     fi
 
-    # check if rosbag path exists
+    # check if rosbag path exists and create it if it does not
+    if [ ! -d "$record_rosbag_path" ]; then
+        if [ $quiet -eq 0 ]; then
+            echo "Creating rosbag path $record_rosbag_path"
+        fi
+        mkdir -p $record_rosbag_path
+    fi
+
+    # now rosbag path should exist
     if [ -d "$record_rosbag_path" ]; then
         record_rosbag=1
 
