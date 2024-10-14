@@ -12,13 +12,13 @@ fi
 SESSION="Experiment"
 max_runtime=300
 max_retries=20
-waypoints_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
-gnss_error_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
-nav_planner_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
-nav_controller_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/controller_mppi.yaml"
-results_dir="/home/ubuntu/Documents/wpf/logs"
-output_file="/home/ubuntu/Documents/wpf/results.yaml"
-sources=( "/opt/ros/iron/setup.bash" "/home/ubuntu/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/ubuntu/Documents/ros2/wpf_ws/install/setup.bash" )
+waypoints_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
+gnss_error_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
+nav_planner_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
+nav_controller_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/controller_mppi.yaml"
+results_dir="~/Documents/wpf/logs"
+output_file="~/Documents/wpf/results.yaml"
+sources=( "/opt/ros/iron/setup.bash" "~/Documents/ros2/dmc_11_ws/install/setup.bash" "~/Documents/ros2/wpf_ws/install/setup.bash" )
 init_sources=0
 run_headless=1
 quiet=0
@@ -324,7 +324,7 @@ fi
 # source all files in the sources array
 for src in "${sources[@]}"
 do
-    p=$(realpath "$src")
+    p=$(resolve_path "$src")
     if [ $quiet -eq 0 ]; then
         echo "Sourcing $p"
     fi
