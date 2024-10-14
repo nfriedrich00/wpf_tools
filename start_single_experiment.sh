@@ -12,22 +12,43 @@ fi
 SESSION="Experiment"
 max_runtime=300
 max_retries=20
-waypoints_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
-gnss_error_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
-nav_planner_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
-nav_controller_filepath="/home/ubuntu/Documents/ros2/wpf_ws/src/wpf_tools/config/controller_mppi.yaml"
-results_dir="/home/ubuntu/Documents/wpf/logs"
-output_file="/home/ubuntu/Documents/wpf/results.yaml"
-sources=( "/opt/ros/iron/setup.bash" "/home/ubuntu/Documents/ros2/dmc_11_ws/install/setup.bash" "/home/ubuntu/Documents/ros2/wpf_ws/install/setup.bash" )
+waypoints_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/waypoints_cosine.yaml"
+gnss_error_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/gps_error_simulator_config.yaml"
+nav_planner_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/planner_straight_line.yaml"
+nav_controller_filepath="~/Documents/ros2/wpf_ws/src/wpf_tools/config/controller_mppi.yaml"
+results_dir="~/Documents/wpf/logs"
+output_file="~/Documents/wpf/results.yaml"
+sources=( "/opt/ros/iron/setup.bash" "~/Documents/ros2/dmc_11_ws/install/setup.bash" "~/Documents/ros2/wpf_ws/install/setup.bash" )
 init_sources=0
 run_headless=1
 quiet=0
 rm_results=1
 logging_file="output.log"
+record_rosbag_path=""
+record_rosbag=0
+
+function display_help {
+    echo "Usage: $0 [-w waypoints_filepath] [-g gnss_error_filepath] [-p nav_planner_filepath] [-c nav_controller_filepath] [-t max_runtime] [-m max_retries] [-s source] [-r results_dir] [-o output_file] [-v run_headless] [-q quiet] [-z rm_results] [-l logging_file] [-b record_rosbag_path]"
+    echo "Options:"
+    echo "  -w waypoints_filepath: Path to the waypoints file"
+    echo "  -g gnss_error_filepath: Path to the GNSS error file"
+    echo "  -p nav_planner_filepath: Path to the navigation planner file"
+    echo "  -c nav_controller_filepath: Path to the navigation controller file"
+    echo "  -t max_runtime: Maximum runtime of the experiment in seconds"
+    echo "  -m max_retries: Maximum number of retries to start the experiment"
+    echo "  -s source: Source file to source before starting the experiment"
+    echo "  -r results_dir: Directory to store the results"
+    echo "  -o output_file: File to store the results"
+    echo "  -v run_headless: Run the experiment headless (0) or with GUI (1)"
+    echo "  -q quiet: Run the experiment in quiet mode (1) or verbose mode (0)"
+    echo "  -z rm_results: Remove the results directory (1) or keep it (0)"
+    echo "  -l logging_file: File to log the output of the experiment"
+    echo "  -b record_rosbag_path: Path to record the rosbag"
+}
 
 # parse arguments to the script
 # optionally accept a new path for the config_filepath, max_runtime, session_name and sources
-while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:" opt; do
+while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:b:h" opt; do
     case ${opt} in
         w )
             waypoints_filepath=$OPTARG
@@ -106,9 +127,18 @@ while getopts "w:g:p:c:t:s:r:o:v:q:m:z:l:" opt; do
                 exit 1
             fi
             ;;
+        b)
+            # where to store the rosbag
+            record_rosbag_path=$OPTARG
+            ;;
+
+        h)
+            display_help
+            exit 0
+            ;;
         \?)
             echo "Invalid option: $OPTARG" 1>&2
-            echo "Usage: start_single_experiment.sh -w waypoints_filepath -g gnss_error_filepath -p nav_planner_filepath -c nav_controller_filepath -t max_runtime -l logging_file -m max_retries -s source -r results_dir -o output_file -v run_headless -z rm_results -q quiet" 1>&2
+            display_help
             exit 1
             ;;
     esac
@@ -146,11 +176,11 @@ function check_results {
 
 # function to remove results_dir and all its contents
 function remove_results {
-    if [ $quiet -eq 0 ]; then
-        echo "Removing results..."
-    fi
     if [ $rm_results -ne 0 ]; then
-        rm -rf $results_dir
+        if [ $quiet -eq 0 ]; then
+            echo "Removing results..."
+        fi
+        rm -rf $results_dir/*
     fi
 }
 
@@ -178,11 +208,21 @@ function kill_session {
     sleep 10
     tmux kill-session -t "$1"
     sleep 5 # some nodes keep running for some time
-    remove_results
+}
+
+# function to kill all tmux sessions via killing the tmux server but sendint SIGINT to all tmux sessions
+function kill_all_sessions {
+    for s in $(tmux ls | cut -d: -f1); do
+        # send SIGINT to all windows in the session
+        tmux send-keys -t "$s:0" C-c
+    done
+    sleep 15
+    tmux kill-server
+    sleep 2
 }
 
 # set handler for SIGINT and kill all tmux sessions starting with $SESSION
-trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting..."; kill_session '$SESSION'; exit 1' SIGINT
+trap 'echo "SIGINT detected in start_single_experiment.sh! Exiting..."; kill_all_sessions; exit 1' SIGINT
 
 # resolve all file paths
 waypoints_filepath=$(resolve_path $waypoints_filepath)
@@ -191,6 +231,7 @@ nav_planner_filepath=$(resolve_path $nav_planner_filepath)
 nav_controller_filepath=$(resolve_path $nav_controller_filepath)
 results_dir=$(resolve_path $results_dir)
 output_file=$(resolve_path $output_file)
+record_rosbag_path=$(resolve_path $record_rosbag_path)
 
 # print all arguments for debugging
 if [ $quiet -eq 0 ]; then
@@ -204,6 +245,9 @@ if [ $quiet -eq 0 ]; then
     echo "max_retries: $max_retries"
     echo "run_headless: $run_headless"
     echo "quiet: $quiet"
+    echo "rm_results: $rm_results"
+    echo "logging_file: $logging_file"
+    echo "record_rosbag_path: $record_rosbag_path"
     for src in "${sources[@]}"
     do
     echo "source: $src"
@@ -232,11 +276,58 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# check whether results_dir exists
+if [ -d $results_dir ]; then
+    if [ $quiet -eq 0 ]; then
+        echo "Results directory $results_dir found"
+    fi
+else
+    echo "Results directory $results_dir not found"
+    exit 1
+fi
+
+# check if rosabag path is not empty
+if [ ! -z "$record_rosbag_path" ]; then
+    if [ $quiet -eq 0 ]; then
+        echo "Rosbag path set to $record_rosbag_path"
+    fi
+
+    # check if rosbag path exists and create it if it does not
+    if [ ! -d "$record_rosbag_path" ]; then
+        if [ $quiet -eq 0 ]; then
+            echo "Creating rosbag path $record_rosbag_path"
+        fi
+        mkdir -p $record_rosbag_path
+    fi
+
+    # now rosbag path should exist
+    if [ -d "$record_rosbag_path" ]; then
+        record_rosbag=1
+
+        # find a unique rosbag path
+        i=0
+        record_rosbag_path_base=$record_rosbag_path
+        record_rosbag_path="$record_rosbag_path_base/bag-$i"
+        while [[ -d "$record_rosbag_path" ]]; do
+            ((i++))
+            record_rosbag_path="$record_rosbag_path_base/bag-$i"
+        done
+
+        if [ $quiet -eq 0 ]; then
+            echo "Unique rosbag path found: $record_rosbag_path"
+        fi
+    else 
+        if [ $quiet -eq 0 ]; then
+            echo "Rosbag path $record_rosbag_path does not exist or is not a directory"
+        fi
+    fi
+fi
+
 
 # source all files in the sources array
 for src in "${sources[@]}"
 do
-    p=$(realpath "$src")
+    p=$(resolve_path "$src")
     if [ $quiet -eq 0 ]; then
         echo "Sourcing $p"
     fi
@@ -254,6 +345,9 @@ session_name="$SESSION"
 i=0
 retries=0
 kill=0
+
+# remove results from previous runs
+remove_results
 
 # loop until we successfully start the experiment or we reach the maximum number of retries
 while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
@@ -279,15 +373,6 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
         fi
     fi
 
-    # start the experiment - log output to logging file 
-    tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >> '"$logging_file" \;
-    tmux rename-window -t 0 'window 0'
-
-    sleep 1
-    if [ $quiet -eq 0 ]; then
-        echo "Start experiment - Retries: $retries, started: $started" 
-    fi
-
     # construct command to execute with tmux
     if [ $run_headless -eq 1 ]; then
         cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
@@ -299,8 +384,21 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
         echo "Executing command: $cmd"
     fi
 
-    # execute command in tmux
-    tmux send-keys -t 'window 0' "$cmd" C-m
+
+    # start session for experiment
+    tmux new-session -d -s "$session_name-experiment" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >> '"$logging_file" \;
+    tmux send-keys -t "$session_name-experiment" "$cmd" C-m
+
+    # start session for rosbag recording
+    if [ $record_rosbag -eq 1 ]; then
+        tmux new-session -d -s "$session_name-rosbag" \; pipe-pane -o 'cat >> '"$logging_file" \;
+        tmux send-keys -t "$session_name-rosbag" "ros2 bag record -a -o $record_rosbag_path" C-m
+    fi
+
+    sleep 1
+    if [ $quiet -eq 0 ]; then
+        echo "Start experiment - Retries: $retries, started: $started" 
+    fi
 
     start_time=$(date +%s)
     ((retries++))
@@ -320,7 +418,14 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
     fi
 
     if [ $kill -eq 1 ]; then
-        kill_session "$session_name"
+        kill_all_sessions
+        if [ $record_rosbag -eq 1 ]; then
+            # remove rosbag file
+            rm -rf $record_rosbag_path
+        fi
+        remove_results
+        
+
         kill=0
         continue
     fi
@@ -334,10 +439,11 @@ done
 
 # exit if we did not manage to start simulation
 if [ $started -eq 0 ]; then
-    tmux send-keys -t 'window 0' C-c
-    sleep 10
-    tmux kill-session -t "$session_name"
-    sleep 5 # some nodes keep running for some time
+    kill_all_sessions
+    if [ $record_rosbag -eq 1 ]; then
+        # remove rosbag file
+        rm -rf $record_rosbag_path
+    fi
 
     # analyze data
     remove_results
@@ -353,15 +459,23 @@ while [ $elapsed_time -lt $max_runtime ]; do
             echo "Goal reached after $elapsed_time seconds"
             echo "Ending..."
         fi
-        tmux send-keys -t 'window 0' C-c
+
+        # send SIGINT to the tmux sessions
+        tmux send-keys -t "$session_name-experiment" C-c
         sleep 10
+
+        if [ $record_rosbag -eq 1 ]; then
+            tmux send-keys -t "$session_name-rosbag" C-c
+        fi
+        
+        sleep 5
         # wait for results to be written
         check_results
 
         # kill session
-        tmux kill-session -t "$session_name"
+        kill_all_sessions
         sleep 5 # some nodes keep running for some time
-        
+
         # analyze data
         analyze_data
         remove_results
@@ -380,10 +494,21 @@ done
 
 # timeout
 echo "Timeout, killing..."
-tmux send-keys -t 'window 0' C-c
+
+# send SIGINT to the tmux sessions
+tmux send-keys -t "$session_name-experiment" C-c
 sleep 10
-tmux kill-session -t "$session_name"
-sleep 5 # some nodes keep running for some time
+
+if [ $record_rosbag -eq 1 ]; then
+    tmux send-keys -t "$session_name-rosbag" C-c
+fi
+
+sleep 5
+# wait for results to be written
+check_results
+
+# kill session
+kill_all_sessions
 
 # analyze data
 analyze_data
