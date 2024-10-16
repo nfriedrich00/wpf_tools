@@ -57,12 +57,15 @@ for ((i=1; i<=$loops; i++)); do
   # check return code to be 0 or 2
   if [ $? -eq 0 ] || [ $? -eq 2 ]; then
     
-    if []; then
+    # check if results file exists
+    if [ -f $results_file ]; then
         # rename the results file to avoid overwriting
         filename=$(basename "$results_file" .yaml)
         filepath=$(dirname "$results_file")
         echo "Moving results from '$results_file' to '$filepath/$filename-$i.yaml'"
         mv $results_file "$filepath/$filename-$i.yaml"
+    else
+        echo "Results file '$results_file' not found"
     fi
   else
     echo "Experiment $i failed"
