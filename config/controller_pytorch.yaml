@@ -24,7 +24,7 @@ controller_server:
     # Follow path parameters
     FollowPath: #FollowPathDWB
       plugin: "pytorch_controller::PyTorchController"
-      pytorch_model_path: "/home/gjaeger/Documents/Programming/ros2_home_iron/Documents/pytorch_models/TD3_BC_0_actor.pt"
+      pytorch_model_path: "TD3_BC_0_actor.pt"
       pytorch_trajectory_length: 5
       max_angular_vel: 1.0
       transform_tolerance: 0.1
