@@ -41,7 +41,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# No need for additional shift
+# function for replace ~ in string with $HOME
+function resolve_path {
+    echo $(eval echo $1)
+}
+
+result_file=$(resolve_path $result_file)
 
 # pass remaining arguments (stored in other_args) to start_single_experiment.sh
 for ((i=1; i<=$loops; i++)); do
@@ -50,11 +55,15 @@ for ((i=1; i<=$loops; i++)); do
   "$start_script" $other_args -o $results_file
 
   # check return code to be 0 or 2
-  if [ $? -ne 0 ] && [ $? -ne 2 ]; then
-    # rename the results file to avoid overwriting
-    filename=$(basename "$results_file" .yaml)
-    filepath=$(dirname "$results_file")
-    mv $results_file "$filepath/$filename-$i.yaml"
+  if [ $? -eq 0 ] || [ $? -eq 2 ]; then
+    
+    if []; then
+        # rename the results file to avoid overwriting
+        filename=$(basename "$results_file" .yaml)
+        filepath=$(dirname "$results_file")
+        echo "Moving results from '$results_file' to '$filepath/$filename-$i.yaml'"
+        mv $results_file "$filepath/$filename-$i.yaml"
+    fi
   else
     echo "Experiment $i failed"
   fi
