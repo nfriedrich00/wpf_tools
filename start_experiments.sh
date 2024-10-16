@@ -46,16 +46,18 @@ function resolve_path {
     echo $(eval echo $1)
 }
 
-result_file=$(resolve_path $result_file)
+results_file=$(resolve_path $results_file)
 
 # pass remaining arguments (stored in other_args) to start_single_experiment.sh
 for ((i=1; i<=$loops; i++)); do
   echo "Run experiment $i"
   # Use $other_args directly and -o $results_file
   "$start_script" $other_args -o $results_file
+  res=$?
+  echo "Script returned code: $res"
 
-  # check return code to be 0 or 2
-  if [ $? -eq 0 ] || [ $? -eq 2 ]; then
+  # if return code is 0 or 2, move the results file to a new name
+  if [ $res -eq 0 ] || [ $res -eq 2 ]; then
     
     # check if results file exists
     if [ -f $results_file ]; then
