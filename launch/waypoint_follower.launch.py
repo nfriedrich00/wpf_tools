@@ -39,6 +39,18 @@ def generate_launch_description():
     run_headless = LaunchConfiguration('run_headless')
     decl_run_headless = DeclareLaunchArgument('run_headless', default_value='False')
 
+    force_full_route = LaunchConfiguration('force_full_route')
+    decl_fore_full_route = DeclareLaunchArgument('force_full_route',
+                                                 default_value='True',
+                                                 description='Force the robot to follow the full route. Always start with the first waypoint, not the closest one.',
+                                                 choices=['True', 'False'])
+
+    reverse_waypoints = LaunchConfiguration('reverse_waypoints')
+    decl_reverse_waypoints = DeclareLaunchArgument('reverse_waypoints',
+                                                   default_value='False',
+                                                   description='Reverse the order of the waypoints.',
+                                                   choices=['True', 'False'])
+
     session_start_time = datetime.datetime.now()
     sst = session_start_time
     session_start_time_string = f"{sst.year}{sst.month:02d}{sst.day:02d}{sst.hour:02d}{sst.minute:02d}{sst.second:02d}"
@@ -141,7 +153,9 @@ def generate_launch_description():
         package='claudi_navigation',
         executable='waypoint_follower',
         output='screen',
-        parameters=[{'waypoints_yaml_file_path' : waypoints_filepath}]
+        parameters=[{'waypoints_yaml_filepath' : waypoints_filepath,
+                     'force_full_route' : force_full_route,
+                     'reverse_waypoints' : reverse_waypoints}]
     )
 
 
@@ -207,6 +221,8 @@ def generate_launch_description():
     ld.add_action(decl_nav_planner_config_filepath)
     ld.add_action(decl_nav_controller_config_filepath)
     ld.add_action(decl_run_headless)
+    ld.add_action(decl_fore_full_route)
+    ld.add_action(decl_reverse_waypoints)
     ld.add_action(start_monitoring)
     ld.add_action(start_rviz)
     ld.add_action(start_gazebo)
