@@ -22,7 +22,14 @@ class PathPlotterGroundTruth(Node):
         self.declare_parameter('session_start_time_string', time_now_string).value
         self.session_start_time_string = self.get_parameter('session_start_time_string').value
         self.session_identifier = self.session_start_time_string
+        
+        
         self.logs_path = expanduser("~") + "/Documents" + "/wpf/logs/position"
+
+        self.declare_parameter('logs_path', self.logs_path)
+        if self.get_parameter('logs_path').value is not None:
+            self.logs_path = os.path.join(self.get_parameter('logs_path').value, 'position')
+
         if not exists(self.logs_path):
             makedirs(self.logs_path)
         mkdir(self.logs_path + f'/{self.session_identifier}')

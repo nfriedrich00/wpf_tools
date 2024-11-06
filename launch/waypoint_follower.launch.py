@@ -20,6 +20,10 @@ from launch.substitutions import NotSubstitution
 def generate_launch_description():
     this_pkg_share = get_package_share_directory('wpf_tools')
 
+    logs_path_default = '~/Documents/wpf/logs'
+    logs_path = LaunchConfiguration('logs_path')
+    decl_logs_path = DeclareLaunchArgument('logs_path', default_value=logs_path_default)
+
     waypoints_filepath_default = os.path.join(this_pkg_share, 'config/waypoints_line.yaml')
     waypoints_filepath = LaunchConfiguration('waypoints_filepath')
     decl_waypoints_filepath = DeclareLaunchArgument('waypoints_filepath', default_value=waypoints_filepath_default)
@@ -185,7 +189,8 @@ def generate_launch_description():
         executable='goal_checker',
         output='screen',
         parameters=[{'use_sim_time' : True},
-                    {'session_start_time_string' : session_start_time_string}
+                    {'session_start_time_string' : session_start_time_string},
+                    {'logs_path' : logs_path}
                     # use the start time from this launch file so all nodes
                     # have the same time to use as logfile identifier 
                    ]
@@ -196,7 +201,8 @@ def generate_launch_description():
         executable='log_position',
         output='screen',
         parameters=[{'use_sim_time' : True},
-                    {'session_start_time_string' : session_start_time_string}
+                    {'session_start_time_string' : session_start_time_string},
+                    {'logs_path' : logs_path}
                     # use the start time from this launch file so all nodes
                     # have the same time to use as logfile identifier 
                    ]
@@ -216,6 +222,7 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
+    ld.add_action(decl_logs_path)
     ld.add_action(decl_waypoints_filepath)
     ld.add_action(decl_gps_error_simulator_config_filepath)
     ld.add_action(decl_nav_planner_config_filepath)

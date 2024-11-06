@@ -50,9 +50,13 @@ class GoalChecker(Node):
         self.session_start_time_string = self.get_parameter('session_start_time_string').value
         session_id = self.get_parameter('session_start_time_string').value
 
-        home_dir = os.path.expanduser('~')
-        logs_dir = home_dir + '/Documents/wpf/logs/goal_checker'
-        self.logfile = f'{logs_dir}/{session_id}.yaml'
+        self.logs_path = os.path.expanduser('~') + '/Documents/wpf/logs/goal_checker'
+        
+        self.declare_parameter('logs_path', self.logs_path)
+        if self.get_parameter('logs_path').value is not None:
+            self.logs_path = os.path.join(self.get_parameter('logs_path').value, 'goal_checker')
+
+        self.logfile = f'{self.logs_path}/{session_id}.yaml'
 
         self.declare_parameter('xy_tolerance', 0.1)
         self.declare_parameter('yaw_tolerance', 3.14)
@@ -60,8 +64,8 @@ class GoalChecker(Node):
         self.yaw_tolerance = self.get_parameter('yaw_tolerance').value
 
         # Create log file folder if not already there
-        if not os.path.exists(logs_dir):
-            os.makedirs(logs_dir)
+        if not os.path.exists(self.logs_path):
+            os.makedirs(self.logs_path)
 
         # Get time when starting to move
         self.is_moving = False
