@@ -24,8 +24,7 @@ controller_server:
     # Follow path parameters
     FollowPath: #FollowPathDWB
       plugin: "pytorch_controller::PyTorchController"
-      pytorch_model_path: "TD3_BC_0_actor.pt"
-      pytorch_trajectory_length: 5
+      pytorch_model_path: "/home/gjaeger/Documents/Programming/ICRAAnalysis/intermediate_results/rl_training/models/actor_actor.pt"
       max_angular_vel: 1.0
       transform_tolerance: 0.1
-      ignore_velocities: True
+    

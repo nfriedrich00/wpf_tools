@@ -373,11 +373,20 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
         fi
     fi
 
+    # are we running in our own container? Check for /entrypoint.sh
+    entrypoint_cmd=""
+    if [ -f /entrypoint.sh ]; then
+        if [ $quiet -eq 0 ]; then
+            echo "Running in container - using entrypoint to setup environment"
+        fi
+        entrypoint_cmd="/entrypoint.sh"
+    fi
+
     # construct command to execute with tmux
     if [ $run_headless -eq 1 ]; then
-        cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
+        cmd='$entrypoint_cmd ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
     else
-        cmd='ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=False waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
+        cmd='$entrypoint_cmd ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=False waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
     fi
 
     if [ $quiet -eq 0 ]; then
@@ -387,11 +396,13 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
 
     # start session for experiment
     tmux new-session -d -s "$session_name-experiment" -x "$(tput cols)" -y "$(tput lines)" \; pipe-pane -o 'cat >> '"$logging_file" \;
+    sleep 1
     tmux send-keys -t "$session_name-experiment" "$cmd" C-m
 
     # start session for rosbag recording
     if [ $record_rosbag -eq 1 ]; then
         tmux new-session -d -s "$session_name-rosbag" \; pipe-pane -o 'cat >> '"$logging_file" \;
+        sleep 1
         tmux send-keys -t "$session_name-rosbag" "ros2 bag record -a -o $record_rosbag_path" C-m
     fi
 
