@@ -383,11 +383,11 @@ while [ $started -eq 0 ] && [ $retries -lt $max_retries ]; do
     fi
 
     # construct command to execute with tmux
+    headless_str="False"
     if [ $run_headless -eq 1 ]; then
-        cmd='$entrypoint_cmd ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=True logs_path:='$results_dir' waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
-    else
-        cmd='$entrypoint_cmd ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=False logs_path:='$results_dir' waypoints_filepath:='$waypoints_filepath' gps_error_simulator_config_filepath:='$gnss_error_filepath' nav_planner_config_filepath:='$nav_planner_filepath' nav_controller_config_filepath:='$nav_controller_filepath
-    fi
+        headless_str="True"
+    fi 
+    cmd="$entrypoint_cmd ros2 launch wpf_tools waypoint_follower.launch.py run_headless:=$headless_str logs_path:=$results_dir waypoints_filepath:=$waypoints_filepath gps_error_simulator_config_filepath:=$gnss_error_filepath nav_planner_config_filepath:=$nav_planner_filepath nav_controller_config_filepath:=$nav_controller_filepath"
 
     if [ $quiet -eq 0 ]; then
         echo "Executing command: $cmd"
