@@ -83,8 +83,10 @@ class PathPlotterGroundTruth(Node):
 
     def listener_callback_ground_truth(self, msg):
         time_now = self.get_clock().now().to_msg()
-        time_now_float = float(f'{time_now.sec}.{time_now.nanosec}')
-        time_message_float = float(f'{msg.header.stamp.sec}.{msg.header.stamp.nanosec}')
+        time_now_ns_to_s = time_now.nanosec/1e9
+        time_now_float = time_now.sec + time_now_ns_to_s
+        time_message_ns_to_s = msg.header.stamp.nanosec/1e9
+        time_message_float = msg.header.stamp.sec + time_message_ns_to_s
 
         position_data = {  'x': msg.pose.position.x,
                             'y': msg.pose.position.y,
@@ -103,8 +105,10 @@ class PathPlotterGroundTruth(Node):
 
     def listener_callback_localization(self, msg):
         time_now = self.get_clock().now().to_msg()
-        time_now_float = float(f'{time_now.sec}.{time_now.nanosec}')
-        time_message_float = float(f'{msg.header.stamp.sec}.{msg.header.stamp.nanosec}')
+        time_now_ns_to_s = time_now.nanosec/1e9
+        time_now_float = time_now.sec + time_now_ns_to_s
+        time_message_ns_to_s = msg.header.stamp.nanosec/1e9
+        time_message_float = msg.header.stamp.sec + time_message_ns_to_s
 
         position_data = {  'x': msg.pose.pose.position.x,
                             'y': msg.pose.pose.position.y,
