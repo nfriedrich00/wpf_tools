@@ -39,7 +39,7 @@ function display_help {
     echo "  -s source: Source file to source before starting the experiment"
     echo "  -r results_dir: Directory to store the results"
     echo "  -o output_file: File to store the results"
-    echo "  -v run_headless: Run the experiment headless (0) or with GUI (1)"
+    echo "  -v run_headless: Run the experiment headless (1) or with GUI (0)"
     echo "  -q quiet: Run the experiment in quiet mode (1) or verbose mode (0)"
     echo "  -z rm_results: Remove the results directory (1) or keep it (0)"
     echo "  -l logging_file: File to log the output of the experiment"
