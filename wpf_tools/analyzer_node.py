@@ -18,8 +18,6 @@ class AnalyzerNode(Node):
     def __init__(self):
         super().__init__('analyzer_node')
 
-        default_logs_parent_dir = os.path.expanduser("~") + "/Documents/wpf/logs"
-
         self.declare_parameter('logs_directory', '')
         self.logs_dir = self.get_parameter('logs_directory').value
         if self.logs_dir:
@@ -27,7 +25,7 @@ class AnalyzerNode(Node):
             self.get_logger().info(f'Logs directory provided: {self.logs_dir}')
         else:
             # Parameter not set, using default value
-            #default_logs_dir = ... # todo: move here
+            default_logs_parent_dir = os.path.expanduser("~") + "/Documents/wpf/logs"
             self.get_logger().info(f'No logs directory provided. Looking for logs in default directory {default_logs_parent_dir}.')
             if not os.path.exists(default_logs_parent_dir):
                 self.get_logger().error(f'Default logs directory {default_logs_parent_dir} does not exist. Aborting.')
@@ -89,9 +87,7 @@ def main(args=None):
     """
     rclpy.init(args=args)
     analyzer_node = AnalyzerNode()
-    rclpy.spin_once(analyzer_node) # spine_once: self destruct after analysis
-    #analyzer_node.destroy_node()
-    #rclpy.shutdown()
+    rclpy.spin(analyzer_node)
 
 
 if __name__ == '__main__':
