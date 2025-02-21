@@ -9,7 +9,9 @@ The package offers these tools:
 * Path plotter
 * Waypoint generator
 * GPS error simulator
-* Wait for localization node
+* LogAnalyzer
+* AnalyzeLogs node
+* Wait for localization node (deprecated)
 * Odom Ros2 republisher (deprecated)
 
 ### Ground truth publisher
@@ -35,7 +37,30 @@ Square wave: not yet implemented
 ### GPS error simulator
 todo
 
+
+### LogAnalyzer
+
+The `LogAnalyzer` class is responsible for analyzing the logs generated during a simulation.
+It processes the log files to extract relevant data, calculates errors, distances, and speeds, and saves the results to a file.
+The analysis can be limited to a specific time interval using the `start_time` and `end_time` parameters.
+
+
+### AnalyzerNodode
+
+The `AnalyzerNode` uses the `LogAnalyzer` class to analyze the data logged during the simulation.
+By default, it analyzes the data of the last simulation and generates additional information such as average speed, traveled distance, and errors.
+The node can be configured to analyze logs from a specific directory and to limit the analysis to a specific time interval.
+
+
+### AnalyzerActionServer
+
+The `AnalyzerActionServer` offers an action server that provides an action interface for analyzing logs.
+It uses the `LogAnalyzer` class to perform the analysis based on the parameters provided in the action request.
+
+
 ### Wait for localization node
+> Not required anymore, use the `claudi_monitoring` package instead.
+
 This node is just listening to the map topic. After the first message is received, the node shuts down. This allows to start the navigation as soon as the localization is ready by using the OnProcessExit event handler.
 
 ### Odom Ros2 republisher
@@ -48,8 +73,8 @@ Node, that listens to `/odom/gazebo` (ros_gz_bridge output), adjusts header.fram
 
 ### Dependencies
 
-* For the waypoint generator, a running gps localization with navsat_transform_node is required
-* ... many packages, use rosdep to install
+* For the waypoint generator, a running gps localization with navsat_transform_node is required.
+* [*wpf_msgs*](https://github.com/nfriedrich00/wpf_msgs) for the analyzer action server.
 
 ### Installing
 
@@ -91,6 +116,46 @@ ros2 run wpf_tools waypoint_generator_node.py --ros-args --param-file ./src/wpf_
 ### GPS error simulator
 todo
 
+### AnalyzerNode
+
+Use the analyzer node to analyze the latest logs in the default directory.
+
+
+```bash
+ros2 run wpf_tools analyze_data
+```
+
+As default, the analyzer node analyzes the latest logs in the `~/Documents/wpf/logs/` directory.
+
+| Parameter | Default value | Description |
+| ----------- | ----------- | ----------|
+| logs_directory | ~/Documents/wpf/logs/\<latest folder with number as name> | This is the directory containing the log files as yaml files. |
+| overwrite_results | False | Whether to overwrite an existing results.yaml or create a new file. |
+| start_time | 0.0 | Lower limit for the analysis. Only consider data points with a timestamp above or equal to this.
+| end_time | 0.0 | Upper limit for the anaylsis. Only consider data points with a timestamp below or equal to this. Leave this at 0.0 for no restrictions. |
+
+
+### AnalyzerActionServer
+
+After starting the action server, you can send a goal request with the `AnalyzeLogs` action from `wpf_msgs` to start the analysis for specific logs and time intervals.
+
+To start the action server, use this command.
+
+```bash
+ros2 run wpf_tools analyzer_action_server
+```
+
+To send an action goal request, use the following command.
+
+```bash
+ros2 action send_goal /analyze_logs wpf_msgs/action/AnalyzeLogs "{logs_directory: <directory containing the position.yaml>}"
+```
+
+The action server will reject request without logs_directory as there is no default value.
+The other values are optional and disabled by default.
+Use the `--feedback` option to receive action updates.
+
+See [wpf_msgs](https://github.com/nfriedrich00/wpf_msgs) for details on the AnalyzeLogs action.
 
 ### Topics
 
@@ -114,5 +179,7 @@ todo
 
 ## Version History
 
+* 0.2
+    * Revise logging and analysis
 * 0.1
     * Initial Release

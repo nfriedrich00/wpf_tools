@@ -39,6 +39,7 @@ setup(
                 'log_position = wpf_tools.log_position_node:main',
                 'analyze_data = wpf_tools.analyzer_node:main',
                 'start_topic_monitor = wpf_tools.monitor_node:main',
+                'analyzer_action_server = wpf_tools.analyzer_action_server:main',
         ],
     },
 )

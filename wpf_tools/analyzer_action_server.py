@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from wpf_msgs.action import AnalyzeLogs
 
-from wpf_tools.analyzer_node import AnalyzerNode
+from wpf_tools.analyzer_node import LogAnalyzer
 
 class AnalyzerActionServer(Node):
 
@@ -17,34 +17,54 @@ class AnalyzerActionServer(Node):
             goal_callback=self.goal_callback,
             cancel_callback=self.cancel_callback
         )
-        self.get_logger().info('AnalyzerActionServer is ready.')
+        self.get_logger().info('Analyzer action server is ready.')
 
     def goal_callback(self, goal_request):
-        return GoalResponse.ACCEPT
+        if not goal_request.logs_directory:
+            self.get_logger().error('Rejecting goal request: No logs directory provided. ')
+            return GoalResponse.REJECT
+        else:
+            return GoalResponse.ACCEPT
 
     def cancel_callback(self, goal_handle):
         return CancelResponse.ACCEPT
+    
+    def give_feedback(self, goal_handle, feedback: str):
+        self.get_logger().info(feedback)
+        feedback_msg = AnalyzeLogs.Feedback()
+        feedback_msg.feedback = feedback
+        goal_handle.publish_feedback(feedback_msg)
 
     def execute_callback(self, goal_handle):
-        self.get_logger().info('Received goal request')
+        self.give_feedback(goal_handle, 'Received goal request.')
         goal = goal_handle.request
-        print(goal.overwrite_results)
+        analyzer = LogAnalyzer(goal.logs_directory, goal.overwrite_results, goal.start_time, goal.end_time)
 
-        analyzer = AnalyzerNode()
-        if goal.logs_directory:
-            analyzer.logs_dir = goal.logs_directory
+        self.give_feedback(goal_handle, 'Loading data...')
 
-        analyzer.overwrite_results = goal.overwrite_results
-        if goal.start_time > 0 or goal.end_time > 0:
-            analyzer.start_time = goal.start_time
-            analyzer.end_time = goal.end_time
+        if analyzer.load_data():
+            self.give_feedback(goal_handle, 'Data loaded successfully.')
+        else:
+            self.give_feedback(goal_handle, 'Failed to load data.')
+            goal_handle.abort()
+            return AnalyzeLogs.Result(success=False)
 
-        try:
-            analyzer.analyze_data()
+        self.give_feedback(goal_handle, 'Calculating errors from logs...')
+
+        if analyzer.get_errors():
+            self.give_feedback(goal_handle, 'Succesfully calculated errors from logs.')
+        else:
+            self.give_feedback(goal_handle, 'Failed to calculate errors from logs.')
+            return AnalyzeLogs.Result(success=False)
+        
+        self.give_feedback(goal_handle, 'Saving results...')
+
+        if analyzer.log_results(analyzer.results):
+            self.give_feedback(goal_handle, f'Results saved to {analyzer.results_path}')
             goal_handle.succeed()
             return AnalyzeLogs.Result(success=True)
-        except Exception as e:
-            self.get_logger().error(f'Analysis failed: {str(e)}')
+        else:
+            self.give_feedback(goal_handle, f'Failed to save results to {analyzer.results_path}')
             goal_handle.abort()
             return AnalyzeLogs.Result(success=False)
 
