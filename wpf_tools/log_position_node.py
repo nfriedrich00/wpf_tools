@@ -8,10 +8,10 @@ import datetime
 from nav_msgs.msg import Path, Odometry
 from geometry_msgs.msg import PoseStamped
 
-class PathPlotterGroundTruth(Node):
+class PositionLoggingNode(Node):
 
     def __init__(self):
-        super().__init__('path_plotter_ground_truth')
+        super().__init__('position_logging_node')
         time_now = datetime.datetime.now()
         time_now_string = f"{time_now.year}{time_now.month:02d}{time_now.day:02d}{time_now.hour:02d}{time_now.minute:02d}{time_now.second:02d}"
         self.declare_parameter('session_start_time_string', time_now_string).value
@@ -124,9 +124,9 @@ class PathPlotterGroundTruth(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    path_plotter_ground_truth = PathPlotterGroundTruth()
-    rclpy.spin(path_plotter_ground_truth)
-    path_plotter_ground_truth.destroy_node()
+    postion_logging_node = PositionLoggingNode()
+    rclpy.spin(postion_logging_node)
+    postion_logging_node.destroy_node()
     rclpy.shutdown()
 
 
