@@ -23,10 +23,15 @@ class AnalyzerActionServer(Node):
         if not goal_request.logs_directory:
             self.get_logger().error('Rejecting goal request: No logs directory provided. ')
             return GoalResponse.REJECT
+        if goal_request.start_time and goal_request.end_time and goal_request.start_time > goal_request.end_time:
+            self.get_logger().error('Rejecting goal request: Start time is greater than end time.')
+            return GoalResponse.REJECT
         else:
             return GoalResponse.ACCEPT
 
     def cancel_callback(self, goal_handle):
+        self.get_logger().info('Received cancel request.')
+        #goal_handle.canceled() # not tested
         return CancelResponse.ACCEPT
     
     def give_feedback(self, goal_handle, feedback: str):

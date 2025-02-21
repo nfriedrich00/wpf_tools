@@ -78,10 +78,27 @@ class LogAnalyzer:
 
         # if start_time or end_time is set, use it to limit the analysis
         if not self.start_time and not self.end_time:
+            # none are set, make it manually
             self.start_time = 0.0
             # self.end_time should be the last timestamp in the logs
             # timestamp means: we don't want to use the first key, we use key 'time'
+            # do not set it to inf, because we want to know the lenght of the time interval
             self.end_time = max([float(pos_data[key]['time']) for key in pos_data])
+        else:
+            # at least one is set, make sure values are valid
+            if self.start_time < 0.0:
+                self.start_time = 0.0
+            if self.end_time < 0.0:
+                self.end_time = 0.0
+
+            # start_time has to be smaller than end_time, but
+            # one exception: only start_time is set, then end_time is the last timestamp
+            if self.start_time and not self.end_time:
+                self.end_time = max([float(pos_data[key]['time']) for key in pos_data])
+            elif self.start_time > self.end_time:
+                # make no assumptions, this is not a valid request, so return false
+                return False
+
             
         # We use the timestampe at the 'time' key and not the first key,
         # because the first key is the logging time and not the time of the measurement.
