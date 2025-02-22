@@ -44,7 +44,7 @@ def generate_launch_description():
 
     start_experiment = Node(
         package='claudi_monitoring',
-        executable='lifecycle_launch',
+        executable='lifecycle_launch_node',
         name='wpf_launch_lifecycle_node',
         output='screen',
         parameters=[{'use_sim_time' : True},
