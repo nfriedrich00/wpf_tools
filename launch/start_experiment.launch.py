@@ -3,42 +3,11 @@ import os
 from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration, PythonExpression
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
-from launch.conditions import IfCondition, UnlessCondition
-
-
-def raise_key_not_found_error(key, filepath):
-    raise ValueError(key + ' not found in config file at ' + filepath)
-
-
-def start_wpf_lifecycle_node(context, *args, **kwargs):
-    waypoints_filepath = LaunchConfiguration('waypoints_filepath').perform(context)
-    use_simulation = LaunchConfiguration('use_simulation').perform(context)
-    config_filepath = LaunchConfiguration('config_filepath').perform(context)
-
-    if waypoints_filepath == 'placeholder - will raise error if not set':
-        raise ValueError('waypoints_filepath not set')
-
-    additional_arguments = '-p waypoints_yaml_filepath:=' + waypoints_filepath
-
-    wpf_lifecycle_node = Node(
-        package='claudi_monitoring',
-        executable='lifecycle_node',
-        name='wpf_lifecycle_node',
-        output='screen',
-        parameters=[{'use_sim_time' : bool(use_simulation),
-                     'waypoint_follower.additional_arguments' : additional_arguments},
-                    config_filepath]
-    )
-
-    return [wpf_lifecycle_node]
-
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
-    this_pkg_share = get_package_share_directory('wpf_tools')
-
     config_filepath = LaunchConfiguration('config_filepath')
     decl_config_filepath = DeclareLaunchArgument('config_filepath', default_value='')
 
