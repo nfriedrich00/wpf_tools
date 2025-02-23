@@ -27,10 +27,15 @@ class PositionLoggingNode(Node):
         if not exists(self.logs_dir):
             makedirs(self.logs_dir)
 
-        if exists(self.logs_dir + '/ground_truth.yaml') \
-            or exists(self.logs_dir + '/localization.yaml') \
-            or exists(self.logs_dir + '/path.yaml'):
-            self.get_logger().warn(f'Log files already exist in {self.logs_dir}. This will result in unintended behavior.')
+        if exists(self.logs_dir + '/ground_truth.yaml'):
+            self.get_logger().warn(f'Log file {self.logs_dir}/ground_truth.yaml did already exists. Overwriting it...')
+            open(self.logs_dir + '/ground_truth.yaml', 'w').close()
+        if exists(self.logs_dir + '/localization.yaml'):
+            self.get_logger().warn(f'Log file {self.logs_dir}/localization.yaml did already exists. Overwriting it...')
+            open(self.logs_dir + '/localization.yaml', 'w').close()
+        if exists(self.logs_dir + '/path.yaml'):
+            self.get_logger().warn(f'Log file {self.logs_dir}/path.yaml did already exists. Overwriting it...')
+            open(self.logs_dir + '/path.yaml', 'w').close()
 
         #Subscriber
         self.subscription_ground_truth = self.create_subscription(
