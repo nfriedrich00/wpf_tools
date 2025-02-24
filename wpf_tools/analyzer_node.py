@@ -63,6 +63,24 @@ class AnalyzerNode(Node):
         Set to 0.0 to disable.
         """
 
+        self.declare_parameter('start_position', 0.0)
+        self.start_position = self.get_parameter('start_position').value
+        """
+        Parameter to limit the analysis to a specific interval.
+        The analysis will only consider data after the robot has moved a specific distance according
+        to the ground truth data.
+        Set to 0.0 to disable.
+        """
+
+        self.declare_parameter('end_position', 0.0)
+        self.end_position = self.get_parameter('end_position').value
+        """
+        Parameter to limit the analysis to a specific interval.
+        The analysis will only consider data until the robot has moved a specific distance according
+        to the ground truth data.
+        Set to 0.0 to disable.
+        """
+
         if self.end_time < self.start_time:
             self.get_logger().error('End time is smaller than start time. Aborting.')
             raise ValueError
@@ -72,7 +90,9 @@ class AnalyzerNode(Node):
         # This way, the node will be destroyed after the analysis is done without errors.
 
     def run_analysis(self):
-        log_analyzer = LogAnalyzer(self.logs_dir, self.overwrite_results, self.start_time, self.end_time)
+        log_analyzer = LogAnalyzer(self.logs_dir, self.overwrite_results,
+                                   self.start_time, self.end_time,
+                                   self.start_position, self.end_position)
         if log_analyzer.analyze_data():
             self.get_logger().info("Analysis successful.")
         else:

@@ -4,18 +4,24 @@ import yaml
 from pathlib import Path as pathlibPath
 
 from wpf_utils import (get_distance_point_line, get_reference_point,
-                       get_distance_through_points, euclidean_distance_2d)
+                       get_distance_through_points, euclidean_distance_2d,
+                       get_first_timestamp_after_distance)
 
 class LogAnalyzer:
     def __init__(self, logs_dir: str, overwrite_results: bool,
-                 start_time: float, end_time: float):
+                 start_time: float, end_time: float,
+                 start_position: float, end_position: float):
         self.logs_dir = logs_dir
         self.overwrite_results = overwrite_results
         self.start_time = start_time
         self.end_time = end_time
+        self.start_position = start_position
+        self.end_position = end_position
 
     def analyze_data(self):
         if not self.load_data():
+            return False
+        if not self.limit_data():
             return False
         if not self.get_errors():
             return False
@@ -28,7 +34,6 @@ class LogAnalyzer:
         ''' # todo: try really making it just the relevant part
             # otherwise make a seperate function to restrict the data to the relevant part 
         logs_dir = self.logs_dir
-        session_id = pathlibPath(logs_dir).stem
 
 
         # Check if results file already exists
@@ -47,15 +52,15 @@ class LogAnalyzer:
         else:
             with open(logs_dir + '/ground_truth.yaml', 'r',
                     encoding='utf-8') as position_file:
-                pos_data = yaml.safe_load(position_file)
+                self.pos_data = yaml.safe_load(position_file)
 
         localization_logs = logs_dir + '/localization.yaml'
         if not exists(localization_logs):
-            loc_data = {}#todo: why do we need an empry dict if there is no data?
+            self.loc_data = {}#todo: why do we need an empry dict if there is no data?
         else:
             with open(self.logs_dir + '/localization.yaml', 'r',
                     encoding='utf-8') as localization_file:
-                loc_data = yaml.safe_load(localization_file)
+                self.loc_data = yaml.safe_load(localization_file)
 
         path_logs = logs_dir + '/path.yaml'
         if not exists(path_logs):
@@ -74,56 +79,100 @@ class LogAnalyzer:
                     encoding='utf-8') as goal_checker_file:
                 goal_checker_data = yaml.safe_load(goal_checker_file)
 
-        ###### restrict data to relevant part
-
-        # if start_time or end_time is set, use it to limit the analysis
-        if not self.start_time and not self.end_time:
-            # none are set, make it manually
-            self.start_time = 0.0
-            # self.end_time should be the last timestamp in the logs
-            # timestamp means: we don't want to use the first key, we use key 'time'
-            # do not set it to inf, because we want to know the lenght of the time interval
-            self.end_time = max([float(pos_data[key]['time']) for key in pos_data])
-        else:
-            # at least one is set, make sure values are valid
-            if self.start_time < 0.0:
-                self.start_time = 0.0
-            if self.end_time < 0.0:
-                self.end_time = 0.0
-
-            # start_time has to be smaller than end_time, but
-            # one exception: only start_time is set, then end_time is the last timestamp
-            if self.start_time and not self.end_time:
-                self.end_time = max([float(pos_data[key]['time']) for key in pos_data])
-            elif self.start_time > self.end_time:
-                # make no assumptions, this is not a valid request, so return false
-                return False
-
-            
-        # We use the timestampe at the 'time' key and not the first key,
-        # because the first key is the logging time and not the time of the measurement.
-        pos_data = {k: v for k, v in pos_data.items()
-                    if self.start_time <= float(v['time']) <= self.end_time}
-        loc_data = {k: v for k, v in loc_data.items()
-                    if self.start_time <= float(v['time']) <= self.end_time}
-
-        self.pos_points = np.array([[pos_data[key]['position']['x'],
-                                pos_data[key]['position']['y'],
-                                pos_data[key]['position']['z'],
-                                pos_data[key]['time'],
-                                key] for key in pos_data])
-        self.loc_points = np.array([[loc_data[key]['position']['x'],
-                                loc_data[key]['position']['y'],
-                                loc_data[key]['position']['z'],
-                                loc_data[key]['time'],
-                                key] for key in loc_data])
-
         path_key = list(path_data.keys())[0]
         self.path_points = np.array([[wp['x'],
-                                 wp['y'],
-                                 wp['z'],
-                                 0.0] for wp in path_data[path_key]['waypoints']])
+                                      wp['y'],
+                                      wp['z'],
+                                      0.0] for wp in path_data[path_key]['waypoints']])
         return True
+
+    def limit_data(self):
+        ''' Limit the data to the relevant part.
+        '''
+        self.pos_points = np.array([[self.pos_data[key]['position']['x'],
+                                     self.pos_data[key]['position']['y'],
+                                     self.pos_data[key]['position']['z'],
+                                     self.pos_data[key]['time'],
+                                     key] for key in self.pos_data])
+        self.loc_points = np.array([[self.loc_data[key]['position']['x'],
+                                     self.loc_data[key]['position']['y'],
+                                     self.loc_data[key]['position']['z'],
+                                     self.loc_data[key]['time'],
+                                     key] for key in self.loc_data])
+        self.total_traveled_distance = get_distance_through_points(self.pos_points)
+        # limits withouth restrictions
+        min_time = min([float(self.pos_data[key]['time']) for key in self.pos_data])
+        max_time = max([float(self.pos_data[key]['time']) for key in self.pos_data])
+
+        # time restrictions
+        if not self.start_time:
+            start_time = 0.0
+        elif min_time < self.start_time <= max_time:
+            start_time = self.start_time
+        elif self.start_time < 0.0:
+            start_time = max_time - self.start_time
+        else:
+            return False
+
+        if not self.end_time:
+            end_time = 0.0
+        elif min_time < self.end_time <= max_time:
+            end_time = self.end_time
+        elif self.end_time < 0.0:
+            end_time = max_time + self.end_time
+            # + because end_time is negative!
+        else:
+            return False
+
+        # path length restrictions
+        if self.start_position:
+            if 0.0 <= self.start_position <= self.total_traveled_distance:
+                start_position = self.start_position
+            elif -self.total_traveled_distance < self.start_position < 0.0:
+                start_position = self.total_traveled_distance - self.start_position
+            else:
+                return False
+
+            start_time = max(start_time, get_first_timestamp_after_distance(self.pos_points, start_position))
+
+        if self.end_position:
+            if 0.0 <= self.end_position <= self.total_traveled_distance:
+                end_position = self.end_position
+            elif -self.total_traveled_distance < self.end_position < 0.0:
+                end_position = self.total_traveled_distance + self.end_position
+                # + because end_position is negative!
+            else:
+                return False
+            
+            if end_time:
+                end_time = min(end_time, get_first_timestamp_after_distance(self.pos_points, end_position))
+            else:
+                end_time = get_first_timestamp_after_distance(self.pos_points, end_position)
+
+        # start_time has to be smaller than end_time, but
+        # one exception: only start_time is set, then end_time is the last timestamp
+        if start_time and not end_time:
+            end_time = max([float(self.pos_data[key]['time']) for key in self.pos_data])
+        elif start_time > end_time:
+            # make no assumptions, this is not a valid request, so return false
+            return False
+
+        if not start_time:
+            self.start_time = min_time
+        else:
+            self.start_time = start_time
+        if not end_time:
+            self.end_time = max_time
+        else:
+            self.end_time = end_time
+        self.pos_points = self.pos_points[(self.pos_points[:, 3] >= self.start_time) &
+                                           (self.pos_points[:, 3] <= self.end_time)]
+        self.pos_points = self.pos_points[np.argsort(self.pos_points[:, 3])]
+        self.loc_points = self.loc_points[(self.loc_points[:, 3] >= self.start_time) &
+                                          (self.loc_points[:, 3] <= self.end_time)]
+        self.loc_points = self.loc_points[np.argsort(self.loc_points[:, 3])]
+        return True
+
 
     def get_errors(self):  
         time_interval = self.end_time - self.start_time
@@ -209,6 +258,7 @@ class LogAnalyzer:
 
         distance_data = {'path': float(path_distance),
                          'ground_truth': float(ground_truth_distance),
+                         'ground_truth_total': float(self.total_traveled_distance),
                          'localization': float(localization_distance),
                          'start_distance_to_goal': float(start_distance_to_goal),
                          'distance_to_goal': float(distance_to_goal)}

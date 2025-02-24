@@ -23,7 +23,7 @@ class AnalyzerActionServer(Node):
         if not goal_request.logs_directory:
             self.get_logger().error('Rejecting goal request: No logs directory provided. ')
             return GoalResponse.REJECT
-        if goal_request.start_time and goal_request.end_time and goal_request.start_time > goal_request.end_time:
+        if goal_request.start_time > 0 and goal_request.end_time > 0 and goal_request.start_time > goal_request.end_time:
             self.get_logger().error('Rejecting goal request: Start time is greater than end time.')
             return GoalResponse.REJECT
         else:
@@ -43,7 +43,9 @@ class AnalyzerActionServer(Node):
     def execute_callback(self, goal_handle):
         self.give_feedback(goal_handle, 'Received goal request.')
         goal = goal_handle.request
-        analyzer = LogAnalyzer(goal.logs_directory, goal.overwrite_results, goal.start_time, goal.end_time)
+        analyzer = LogAnalyzer(goal.logs_directory, goal.overwrite_results,
+                               goal.start_time, goal.end_time,
+                               goal.start_position, goal.end_position)
 
         self.give_feedback(goal_handle, 'Loading data...')
 
@@ -51,6 +53,15 @@ class AnalyzerActionServer(Node):
             self.give_feedback(goal_handle, 'Data loaded successfully.')
         else:
             self.give_feedback(goal_handle, 'Failed to load data.')
+            goal_handle.abort()
+            return AnalyzeLogs.Result(success=False)
+
+        self.give_feedback(goal_handle, 'Restricting data to relevant interval...')
+
+        if analyzer.limit_data():
+            self.give_feedback(goal_handle, 'Success')
+        else:
+            self.give_feedback(goal_handle, 'Failed to limit data.')
             goal_handle.abort()
             return AnalyzeLogs.Result(success=False)
 
