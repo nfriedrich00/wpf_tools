@@ -11,6 +11,14 @@ def generate_launch_description():
     config_filepath = LaunchConfiguration('config_filepath')
     decl_config_filepath = DeclareLaunchArgument('config_filepath', default_value='')
 
+    log_decision_module_state = Node(
+        package='wpf_tools',
+        executable='logging_node',
+        name='log_decision_module_state',
+        parameters=[{'use_sim_time' : True},
+                    config_filepath],
+    )
+
     start_experiment = Node(
         package='claudi_monitoring',
         executable='lifecycle_launch_node',
@@ -40,6 +48,7 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
+    ld.add_action(log_decision_module_state)
     ld.add_action(decl_config_filepath)
     ld.add_action(start_experiment)
     ld.add_action(restart_experiment_manager)
