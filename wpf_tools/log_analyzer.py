@@ -93,16 +93,16 @@ class LogAnalyzer:
                                      self.pos_data[key]['position']['y'],
                                      self.pos_data[key]['position']['z'],
                                      self.pos_data[key]['time'],
-                                     key] for key in self.pos_data])
+                                     key] for key in self.pos_data if 'position' in self.pos_data[key] and 'time' in self.pos_data[key]])
         self.loc_points = np.array([[self.loc_data[key]['position']['x'],
                                      self.loc_data[key]['position']['y'],
                                      self.loc_data[key]['position']['z'],
                                      self.loc_data[key]['time'],
-                                     key] for key in self.loc_data])
+                                     key] for key in self.loc_data if 'position' in self.loc_data[key] and 'time' in self.loc_data[key]])
         self.total_traveled_distance = get_distance_through_points(self.pos_points)
         # limits withouth restrictions
-        min_time = min([float(self.pos_data[key]['time']) for key in self.pos_data])
-        max_time = max([float(self.pos_data[key]['time']) for key in self.pos_data])
+        min_time = min([float(self.pos_data[key]['time']) for key in self.pos_data if 'time' in self.pos_data[key]])
+        max_time = max([float(self.pos_data[key]['time']) for key in self.pos_data if 'time' in self.pos_data[key]])
 
         # time restrictions
         if not self.start_time:
