@@ -69,7 +69,6 @@ class LoggingNode(Node):
         msg_dict = message_to_ordereddict(msg)
         plain_dict = ordered_to_dict(msg_dict)
         yaml_data = {time_now_float: plain_dict}
-        print(self.logs_dir)
         with open((self.logs_dir + '/' + self.logfile_name), 'a') as logfile:
             yaml.dump(yaml_data, logfile, default_flow_style=False)
 
