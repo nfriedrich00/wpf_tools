@@ -21,6 +21,7 @@ def generate_launch_description():
         executable='lifecycle_launch_node',
         name='wpf_launch_lifecycle_node',
         output='screen',
+        emulate_tty=True,
         parameters=[{'use_sim_time' : True,
                      'autostart': True,
                     },
