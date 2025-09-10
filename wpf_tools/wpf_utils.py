@@ -43,6 +43,15 @@ def get_reference_point(time_reference: float, points: tuple[np.array]):
     return points[0] + multiplier * (points[1] - points[0])
 
 
+def get_first_timestamp_after_distance(points: np.array, distance: float):
+    """ Return the timestamp of the first point after a certain distance. """
+    accumulated_distance = 0.0
+    for i in range (1, len(points)):
+        accumulated_distance += euclidean_distance_2d(points[i-1], points[i])
+        if accumulated_distance > distance:
+            return points[i][3]
+    return None
+
 def get_distance_through_points(points: np.array):
     """ Return the accumulated distance through multiple points. """
     distance = 0.0

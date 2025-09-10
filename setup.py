@@ -37,8 +37,11 @@ setup(
                 'wait_for_navigation = wpf_tools.wait_for_navigation_node:main',
                 'goal_checker = wpf_tools.goal_checker_node:main',
                 'log_position = wpf_tools.log_position_node:main',
+                'logging_node = wpf_tools.logging_node:main',
                 'analyze_data = wpf_tools.analyzer_node:main',
                 'start_topic_monitor = wpf_tools.monitor_node:main',
+                'analyzer_action_server = wpf_tools.analyzer_action_server:main',
+                'dm_state_republish = wpf_tools.dm_state_republish_node:main',
         ],
     },
 )

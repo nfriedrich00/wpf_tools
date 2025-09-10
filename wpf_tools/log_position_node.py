@@ -1,6 +1,5 @@
 from os.path import expanduser, exists
-from os import makedirs, mkdir
-import os
+from os import makedirs
 import rclpy
 import yaml
 from rclpy.node import Node
@@ -9,31 +8,34 @@ import datetime
 from nav_msgs.msg import Path, Odometry
 from geometry_msgs.msg import PoseStamped
 
-class PathPlotterGroundTruth(Node):
-
-    path = Path()
-    path.header.frame_id = 'map'
-    counter = 0
-    pose_stamped = PoseStamped()
+class PositionLoggingNode(Node):
 
     def __init__(self):
-        super().__init__('path_plotter_ground_truth')
+        super().__init__('position_logging_node')
         time_now = datetime.datetime.now()
         time_now_string = f"{time_now.year}{time_now.month:02d}{time_now.day:02d}{time_now.hour:02d}{time_now.minute:02d}{time_now.second:02d}"
         self.declare_parameter('session_start_time_string', time_now_string).value
         self.session_start_time_string = self.get_parameter('session_start_time_string').value
-        self.session_identifier = self.session_start_time_string
+        self.session_id = self.session_start_time_string
+
+        default_logs_dir = expanduser("~") + "/Documents/wpf/logs/" + self.session_id
+        self.declare_parameter('logs_directory', default_logs_dir)
         
         
-        self.logs_path = expanduser("~") + "/Documents" + "/wpf/logs/position"
+        self.logs_dir = self.get_parameter('logs_directory').value
 
-        self.declare_parameter('logs_path', self.logs_path)
-        if self.get_parameter('logs_path').value is not None:
-            self.logs_path = os.path.join(self.get_parameter('logs_path').value, 'position')
+        if not exists(self.logs_dir):
+            makedirs(self.logs_dir)
 
-        if not exists(self.logs_path):
-            makedirs(self.logs_path)
-        mkdir(self.logs_path + f'/{self.session_identifier}')
+        if exists(self.logs_dir + '/ground_truth.yaml'):
+            self.get_logger().warn(f'Log file {self.logs_dir}/ground_truth.yaml did already exists. Overwriting it...')
+            open(self.logs_dir + '/ground_truth.yaml', 'w').close()
+        if exists(self.logs_dir + '/localization.yaml'):
+            self.get_logger().warn(f'Log file {self.logs_dir}/localization.yaml did already exists. Overwriting it...')
+            open(self.logs_dir + '/localization.yaml', 'w').close()
+        if exists(self.logs_dir + '/path.yaml'):
+            self.get_logger().warn(f'Log file {self.logs_dir}/path.yaml did already exists. Overwriting it...')
+            open(self.logs_dir + '/path.yaml', 'w').close()
 
         #Subscriber
         self.subscription_ground_truth = self.create_subscription(
@@ -75,8 +77,8 @@ class PathPlotterGroundTruth(Node):
         yaml_data = {time_now_float: {'time': time_message_float,
                                       'waypoints': path_data
                                     }}
-        
-        with open((self.logs_path + f'/{self.session_identifier}/path.yaml'), 'a') as logfile:
+
+        with open((self.logs_dir + '/path.yaml'), 'a') as logfile:
             yaml.dump(yaml_data, logfile, default_flow_style=False)
 
         self.destroy_subscription(self.subscription_path)
@@ -99,8 +101,8 @@ class PathPlotterGroundTruth(Node):
         yaml_data = {time_now_float: {'time': time_message_float,
                                       'position': position_data
                                       }}
-        
-        with open((self.logs_path + f'/{self.session_identifier}/ground_truth.yaml'), 'a') as logfile:
+
+        with open((self.logs_dir + '/ground_truth.yaml'), 'a') as logfile:
             yaml.dump(yaml_data, logfile, default_flow_style=False)
 
     def listener_callback_localization(self, msg):
@@ -121,15 +123,15 @@ class PathPlotterGroundTruth(Node):
         yaml_data = {time_now_float: {'time': time_message_float,
                                       'position': position_data
                                       }}
-        
-        with open((self.logs_path + f'/{self.session_identifier}/localization.yaml'), 'a') as logfile:
+
+        with open((self.logs_dir + '/localization.yaml'), 'a') as logfile:
             yaml.dump(yaml_data, logfile, default_flow_style=False)
 
 def main(args=None):
     rclpy.init(args=args)
-    path_plotter_ground_truth = PathPlotterGroundTruth()
-    rclpy.spin(path_plotter_ground_truth)
-    path_plotter_ground_truth.destroy_node()
+    postion_logging_node = PositionLoggingNode()
+    rclpy.spin(postion_logging_node)
+    postion_logging_node.destroy_node()
     rclpy.shutdown()
 
 
